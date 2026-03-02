@@ -53,7 +53,7 @@ function ModalSelect({
   const selectedOption = options.find((option) => option.value === value);
 
   return (
-    <div ref={rootRef} style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem', color: 'var(--text-muted)', position: 'relative' }}>
+    <div ref={rootRef} style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem', color: 'var(--text-muted)', position: 'relative', minWidth: 0 }}>
       <span>{label}</span>
       <button
         type="button"
@@ -61,29 +61,72 @@ function ModalSelect({
         onClick={() => setOpen((current) => !current)}
         aria-haspopup="listbox"
         aria-expanded={open}
+        style={{
+          width: '100%',
+          minHeight: '44px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '10px',
+          padding: '10px 12px',
+          border: '1px solid var(--glass-border)',
+          borderRadius: '8px',
+          background: 'var(--glass-bg)',
+          color: 'var(--text-primary)',
+          boxSizing: 'border-box',
+        }}
       >
         <span>{selectedOption?.label ?? ''}</span>
         <ChevronDown size={16} />
       </button>
       {open && (
-        <div className="modal-select-menu" role="listbox">
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={
-                option.value === value ? 'modal-select-option is-selected' : 'modal-select-option'
-              }
-              onClick={() => {
-                onChange(option.value);
-                setOpen(false);
-              }}
-              role="option"
-              aria-selected={option.value === value}
-            >
-              {option.label}
-            </button>
-          ))}
+        <div
+          className="modal-select-menu"
+          role="listbox"
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 6px)',
+            left: 0,
+            right: 0,
+            zIndex: 30,
+            maxHeight: '240px',
+            overflowY: 'auto',
+            padding: '6px',
+            border: '1px solid var(--glass-border)',
+            borderRadius: '12px',
+            background: 'var(--panel-muted-bg)',
+            boxShadow: '0 18px 38px rgba(3, 8, 24, 0.42)',
+            boxSizing: 'border-box',
+          }}
+        >
+          {options.map((option) => {
+            const isSelected = option.value === value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                className={isSelected ? 'modal-select-option is-selected' : 'modal-select-option'}
+                onClick={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                }}
+                role="option"
+                aria-selected={isSelected}
+                style={{
+                  width: '100%',
+                  display: 'block',
+                  textAlign: 'left',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  background: isSelected ? 'rgba(96, 165, 250, 0.28)' : 'transparent',
+                  color: 'var(--text-primary)',
+                  boxSizing: 'border-box',
+                }}
+              >
+                {option.label}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -464,6 +507,7 @@ export const ImportModal = ({ isOpen, onClose, onConfirmImport, initialContext }
     </div>
   );
 };
+
 
 
 

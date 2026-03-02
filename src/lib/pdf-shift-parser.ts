@@ -229,30 +229,21 @@ function findEmployeeRowItemsTypeA(
       continue;
     }
 
-    const topMarkerIndex = Math.min(...markerIndexes);
-    const bottomMarkerIndex = Math.max(...markerIndexes);
+    const currentMarkers = markerIndexes.map((index) => pageItems[index]);
+    const rowFloorY = Math.min(...currentMarkers.map((item) => item.y)) - 0.5;
 
-    let startIndex = topMarkerIndex;
-    for (let index = topMarkerIndex - 1; index >= 0; index -= 1) {
+    let rowCeilingY = Number.POSITIVE_INFINITY;
+    for (let index = Math.min(...markerIndexes) - 1; index >= 0; index -= 1) {
       const candidate = pageItems[index];
-      if (candidate.x < 80 && (isEmployeeNameLabel(candidate.text) || isEmployeeIdToken(candidate.text))) {
-        startIndex = index + 1;
-        break;
-      }
-      startIndex = index;
-    }
-
-    let endIndex = pageItems.length;
-    for (let index = bottomMarkerIndex + 1; index < pageItems.length; index += 1) {
-      const candidate = pageItems[index];
-      if (candidate.x < 80 && isEmployeeNameLabel(candidate.text)) {
-        endIndex = index;
+      if (candidate.x < 80 && looksLikeEmployeeLabel(candidate.text)) {
+        rowCeilingY = candidate.y - 0.5;
         break;
       }
     }
 
-    const employeeSlice = pageItems.slice(startIndex, endIndex);
-    const rowItems = employeeSlice.filter((item) => item.x > 80);
+    const rowItems = pageItems.filter(
+      (item) => item.x > 80 && item.y < rowCeilingY && item.y >= rowFloorY,
+    );
 
     if (rowItems.length > 0) {
       return { rowItems, page };
@@ -515,3 +506,4 @@ export async function parseEmployeeShiftsFromPdf(
       throw new Error('No se ha podido identificar el formato del PDF para procesarlo correctamente.');
   }
 }
+
