@@ -8,7 +8,7 @@ import { normalizeShiftTypeLabel } from '../../lib/shifts';
 interface ImportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirmImport: (shifts: Shift[], targetPeriod: CalendarImportContext) => void;
+  onConfirmImport: (shifts: Shift[], targetPeriod: CalendarImportContext) => Promise<boolean>;
   initialContext: CalendarImportContext;
 }
 
@@ -248,7 +248,7 @@ export const ImportModal = ({ isOpen, onClose, onConfirmImport, initialContext }
     setParsedShifts(parsedShifts.filter((_, currentIndex) => currentIndex !== index));
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const importContext: CalendarImportContext = {
       month: Number.parseInt(selectedMonth, 10),
       year: Number.parseInt(selectedYear, 10),
@@ -507,6 +507,7 @@ export const ImportModal = ({ isOpen, onClose, onConfirmImport, initialContext }
     </div>
   );
 };
+
 
 
 

@@ -108,19 +108,20 @@ function insertShift(current: Shift[], incoming: Shift): Shift[] {
   return [...current.filter((shift) => shift.id !== incoming.id), normalizeShift(incoming)];
 }
 
-function shiftsMatch(left: Shift, right: Shift): boolean {
-  const normalizedLeft = normalizeShift(left);
-  const normalizedRight = normalizeShift(right);
-
-  return (
-    normalizedLeft.date === normalizedRight.date &&
-    normalizedLeft.origin === normalizedRight.origin &&
-    getShiftType(normalizedLeft) === getShiftType(normalizedRight) &&
-    normalizedLeft.startTime === normalizedRight.startTime &&
-    normalizedLeft.endTime === normalizedRight.endTime
-  );
+interface ImportConflictState {
+  existing: Shift;
+  incoming: Shift;
+  resolve: (action: 'replace' | 'skip' | 'abort') => void;
 }
 
+function describeShift(shift: Shift): string {
+  const type = getShiftType(shift);
+  const origin = getShiftOrigin(shift) === 'PDF' ? '(E)' : '(P)';
+  if (!hasShiftTimes(shift)) {
+    return `${origin} ${type} en ${shift.date}`;
+  }
+  return `${origin} ${type} ${shift.startTime}-${shift.endTime} en ${shift.date}`;
+}
 function App() {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [isStorageReady, setIsStorageReady] = useState(false);
@@ -140,6 +141,7 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingShiftId, setEditingShiftId] = useState<string | null>(null);
+  const [importConflictState, setImportConflictState] = useState<ImportConflictState | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -246,53 +248,53 @@ function App() {
   const handleToggleTheme = () => {
     setThemeMode((current) => current === 'system' ? 'light' : current === 'light' ? 'dark' : 'system');
   };
+  const requestImportDecision = (existing: Shift, incoming: Shift) =>
+    new Promise<'replace' | 'skip' | 'abort'>((resolve) => {
+      setImportConflictState({ existing, incoming, resolve });
+    });
 
-  const handleConfirmImport = (newShifts: Shift[], targetPeriod: CalendarImportContext) => {
+  const handleConfirmImport = async (newShifts: Shift[], targetPeriod: CalendarImportContext): Promise<boolean> => {
+    const snapshot = [...shifts];
     const normalizedIncoming = newShifts.map(normalizeShift);
-    const duplicateExisting = shifts.filter((existing) =>
-      normalizedIncoming.some((incoming) => shiftsMatch(existing, incoming)),
-    );
-
-    let baseShifts = [...shifts];
-    if (duplicateExisting.length > 0) {
-      const confirmed = window.confirm(
-        `Se han detectado ${duplicateExisting.length} turnos repetidos en el calendario. ` +
-        'Pulsa Aceptar para machacar los turnos nuevos sobre los existentes o Cancelar para abortar la importación.',
-      );
-
-      if (!confirmed) {
-        return;
-      }
-
-      baseShifts = shifts.filter((existing) =>
-        !normalizedIncoming.some((incoming) => shiftsMatch(existing, incoming)),
-      );
-    }
-
-    const accepted = [...baseShifts];
-    const conflicts: string[] = [];
+    let working = [...snapshot];
+    const pendingExistingPdfByDate = new Map<string, Shift[]>();
 
     for (const shift of normalizedIncoming) {
-      const conflict = findShiftConflict(accepted, shift);
-      if (conflict) {
-        conflicts.push(conflict);
+      const existingPdfShifts = pendingExistingPdfByDate.get(shift.date)
+        ?? snapshot.filter((existing) => existing.date === shift.date && getShiftOrigin(existing) === 'PDF');
+
+      pendingExistingPdfByDate.set(shift.date, existingPdfShifts);
+
+      if (existingPdfShifts.length === 0) {
+        working.push(shift);
         continue;
       }
 
-      accepted.push(normalizeShift(shift));
+      const matchingExisting = existingPdfShifts.find((existing) => getShiftType(existing) === getShiftType(shift));
+      const existingShift = matchingExisting ?? existingPdfShifts[0];
+      const decision = await requestImportDecision(existingShift, shift);
+
+      if (decision === 'abort') {
+        setShifts(snapshot);
+        return false;
+      }
+
+      if (decision === 'skip') {
+        continue;
+      }
+
+      working = [...working.filter((existing) => existing.id !== existingShift.id), shift];
+      pendingExistingPdfByDate.set(
+        shift.date,
+        existingPdfShifts.filter((existing) => existing.id !== existingShift.id),
+      );
     }
 
-    if (conflicts.length > 0) {
-      const summary = conflicts.length === 1
-        ? conflicts[0]
-        : `${conflicts.length} turnos no se importaron:\n- ${conflicts.join('\n- ')}`;
-      window.alert(summary);
-    }
-
-    setShifts(accepted);
+    setShifts(working);
     setCurrentYear(targetPeriod.year);
     setCurrentMonth(targetPeriod.month);
     setIsImportOpen(false);
+    return true;
   };
 
   return (
@@ -342,8 +344,67 @@ function App() {
         onConfirmImport={handleConfirmImport}
         initialContext={{ month: currentMonth, year: currentYear }}
       />
+
+      {importConflictState && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '520px' }}>
+            <h3 style={{ margin: '0 0 10px', fontSize: '1.15rem', fontWeight: 800 }}>Conflicto en importación PDF</h3>
+            <p style={{ margin: '0 0 10px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              Ya existe un turno de empresa en este día. Elige qué hacer con el turno importado.
+            </p>
+            <div style={{ display: 'grid', gap: '10px', marginBottom: '16px' }}>
+              <div style={{ border: '1px solid var(--glass-border)', borderRadius: '12px', padding: '12px', background: 'var(--panel-muted-bg)' }}>
+                <div style={{ fontSize: '0.76rem', color: 'var(--text-subtle)', marginBottom: '4px' }}>Turno existente</div>
+                <div style={{ fontWeight: 700 }}>{describeShift(importConflictState.existing)}</div>
+              </div>
+              <div style={{ border: '1px solid var(--glass-border)', borderRadius: '12px', padding: '12px', background: 'var(--panel-muted-bg)' }}>
+                <div style={{ fontSize: '0.76rem', color: 'var(--text-subtle)', marginBottom: '4px' }}>Turno del PDF</div>
+                <div style={{ fontWeight: 700 }}>{describeShift(importConflictState.incoming)}</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', flexWrap: 'wrap' }}>
+              <button
+                className="btn-outline"
+                onClick={() => {
+                  importConflictState.resolve('skip');
+                  setImportConflictState(null);
+                }}
+                style={{ padding: '10px 14px', fontWeight: 700 }}
+              >
+                Omitir turno
+              </button>
+              <button
+                className="btn-outline"
+                onClick={() => {
+                  importConflictState.resolve('abort');
+                  setImportConflictState(null);
+                }}
+                style={{ padding: '10px 14px', fontWeight: 700, borderColor: 'var(--danger)', color: 'var(--danger)' }}
+              >
+                Abortar proceso
+              </button>
+              <button
+                className="btn-gold"
+                onClick={() => {
+                  importConflictState.resolve('replace');
+                  setImportConflictState(null);
+                }}
+                style={{ padding: '10px 14px', fontWeight: 800 }}
+              >
+                Actualizar con PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default App;
+
+
+
+
+
+
