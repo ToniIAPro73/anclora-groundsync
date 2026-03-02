@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { FileText, Loader2, Trash2, Upload, X } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronDown, FileText, Loader2, Trash2, Upload, X } from 'lucide-react';
 import { CalendarImportContext, ParsedCalendarShift } from '../../lib/import-types';
 import { detectPdfCalendarContext, parseEmployeeShiftsFromPdf } from '../../lib/pdf-shift-parser';
 import { Shift } from '../../lib/types';
@@ -12,12 +12,82 @@ interface ImportModalProps {
   initialContext: CalendarImportContext;
 }
 
+interface ModalSelectOption {
+  value: string;
+  label: string;
+}
+
 function isFreeShift(shift: Pick<ParsedCalendarShift, 'shiftType'>): boolean {
   return (shift.shiftType ?? '').trim().toLowerCase() === 'libre';
 }
 
 function hasImportableShiftData(shift: ParsedCalendarShift): boolean {
   return Boolean((shift.shiftType ?? '').trim()) || shift.startTime !== '??:??' || shift.endTime !== '??:??';
+}
+
+function ModalSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: ModalSelectOption[];
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    window.addEventListener('mousedown', handlePointerDown);
+    return () => window.removeEventListener('mousedown', handlePointerDown);
+  }, [open]);
+
+  const selectedOption = options.find((option) => option.value === value);
+
+  return (
+    <div ref={rootRef} style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem', color: 'var(--text-muted)', position: 'relative' }}>
+      <span>{label}</span>
+      <button
+        type="button"
+        className="modal-select-trigger"
+        onClick={() => setOpen((current) => !current)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span>{selectedOption?.label ?? ''}</span>
+        <ChevronDown size={16} />
+      </button>
+      {open && (
+        <div className="modal-select-menu" role="listbox">
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={
+                option.value === value ? 'modal-select-option is-selected' : 'modal-select-option'
+              }
+              onClick={() => {
+                onChange(option.value);
+                setOpen(false);
+              }}
+              role="option"
+              aria-selected={option.value === value}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export const ImportModal = ({ isOpen, onClose, onConfirmImport, initialContext }: ImportModalProps) => {
@@ -49,6 +119,14 @@ export const ImportModal = ({ isOpen, onClose, onConfirmImport, initialContext }
     'Noviembre',
     'Diciembre',
   ];
+  const monthSelectOptions = useMemo(
+    () => monthOptions.map((label, index) => ({ value: String(index), label })),
+    [],
+  );
+  const yearSelectOptions = useMemo(
+    () => availableYears.map((yearOption) => ({ value: yearOption, label: yearOption })),
+    [availableYears],
+  );
 
   useEffect(() => {
     if (!isOpen) {
@@ -187,28 +265,9 @@ export const ImportModal = ({ isOpen, onClose, onConfirmImport, initialContext }
                 <input className="modal-input" type="text" value={employeeId} onChange={(event) => setEmployeeId(event.target.value)} style={{ padding: '10px 12px' }} />
               </label>
 
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                <span>Mes del calendario</span>
-                <select className="modal-input" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)} style={{ padding: '10px 12px' }}>
-                  <option value="">Selecciona un mes</option>
-                  {monthOptions.map((label, index) => (
-                    <option key={label} value={index}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <ModalSelect label="Mes del calendario" value={selectedMonth} options={monthSelectOptions} onChange={setSelectedMonth} />
 
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                <span>Año del calendario</span>
-                <select className="modal-input" value={selectedYear} onChange={(event) => setSelectedYear(event.target.value)} style={{ padding: '10px 12px' }}>
-                  {availableYears.map((yearOption) => (
-                    <option key={yearOption} value={yearOption}>
-                      {yearOption}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <ModalSelect label="Año del calendario" value={selectedYear} options={yearSelectOptions} onChange={setSelectedYear} />
             </div>
 
             <button
