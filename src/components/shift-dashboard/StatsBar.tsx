@@ -58,7 +58,12 @@ function SummaryLine({
         <TotalToken label="JT" value={formatJtValue(monthStats)} suffix="" className="type-jt" />
         <TotalToken label="Libres" value={String(monthStats.freeDays)} suffix="d" className="type-libre" />
         <TotalToken label="Extras" value={monthStats.hoursByType.Extras.toFixed(1)} suffix="h" className="type-extras" />
-        <SectionToken label="Tot. anuales" />`r`n        <TotalToken label="Año" value={yearStats.weeklyHours.toFixed(1)} suffix="h" />`r`n        <TotalToken label="Regular" value={yearStats.hoursByType.Regular.toFixed(1)} suffix="h" className="type-regular" />`r`n        <TotalToken label="JT" value={formatJtValue(yearStats)} suffix="" className="type-jt" />`r`n        <TotalToken label="Libres" value={String(yearStats.freeDays)} suffix="d" className="type-libre" />`r`n        <TotalToken label="Extras" value={yearStats.hoursByType.Extras.toFixed(1)} suffix="h" className="type-extras" />
+        <SectionToken label="Tot. anuales" />
+        <TotalToken label="Año" value={yearStats.weeklyHours.toFixed(1)} suffix="h" />
+        <TotalToken label="Regular" value={yearStats.hoursByType.Regular.toFixed(1)} suffix="h" className="type-regular" />
+        <TotalToken label="JT" value={formatJtValue(yearStats)} suffix="" className="type-jt" />
+        <TotalToken label="Libres" value={String(yearStats.freeDays)} suffix="d" className="type-libre" />
+        <TotalToken label="Extras" value={yearStats.hoursByType.Extras.toFixed(1)} suffix="h" className="type-extras" />
       </div>
     </div>
   );
@@ -77,4 +82,3 @@ export const StatsBar = ({ currentMonthShifts, daysInMonth, currentYearShifts, d
     </div>
   );
 };
-
