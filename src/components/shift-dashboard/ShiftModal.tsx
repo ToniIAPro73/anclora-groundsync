@@ -19,7 +19,7 @@ export const ShiftModal = ({ isOpen, editingShift, onClose, onSave, onDelete }: 
     startTime: '08:00',
     endTime: '14:00',
     location: 'Regular',
-    origin: 'IMG',
+    origin: 'MAN',
   });
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export const ShiftModal = ({ isOpen, editingShift, onClose, onSave, onDelete }: 
         startTime: '08:00',
         endTime: '15:00',
         location: 'Regular',
-        origin: 'IMG',
+        origin: 'MAN',
       });
     }
   }, [editingShift, isOpen]);

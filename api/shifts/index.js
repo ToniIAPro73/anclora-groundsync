@@ -1,4 +1,10 @@
-import { listShifts, replaceAllShifts, validateShiftArray } from '../_lib/shifts-store.js';
+import {
+  deleteShiftsByIds,
+  listShifts,
+  upsertShifts,
+  validateShiftArray,
+  validateShiftIdArray,
+} from '../_lib/shifts-store.js';
 
 function sendJson(res, statusCode, payload) {
   res.status(statusCode).setHeader('Content-Type', 'application/json');
@@ -12,17 +18,37 @@ export default async function handler(req, res) {
       return sendJson(res, 200, { shifts });
     }
 
-    if (req.method === 'PUT') {
+    if (req.method === 'POST' || req.method === 'PUT') {
       const payload = req.body ?? {};
       if (!validateShiftArray(payload.shifts)) {
         return sendJson(res, 400, { error: 'Invalid shifts payload' });
       }
 
-      const shifts = await replaceAllShifts(payload.shifts);
+      const shifts = await upsertShifts(payload.shifts);
       return sendJson(res, 200, { saved: shifts.length });
     }
 
-    res.setHeader('Allow', 'GET, PUT');
+    if (req.method === 'PATCH') {
+      const payload = req.body ?? {};
+      const upserts = payload.upserts ?? [];
+      const deleteIds = payload.deleteIds ?? [];
+
+      if (!validateShiftArray(upserts) || !validateShiftIdArray(deleteIds)) {
+        return sendJson(res, 400, { error: 'Invalid shift patch payload' });
+      }
+
+      const [saved, deleted] = await Promise.all([
+        upserts.length > 0 ? upsertShifts(upserts) : Promise.resolve([]),
+        deleteIds.length > 0 ? deleteShiftsByIds(deleteIds) : Promise.resolve(0),
+      ]);
+
+      return sendJson(res, 200, {
+        saved: saved.length,
+        deleted,
+      });
+    }
+
+    res.setHeader('Allow', 'GET, POST, PUT, PATCH');
     return sendJson(res, 405, { error: 'Method not allowed' });
   } catch (error) {
     console.error('[api/shifts] error', error);

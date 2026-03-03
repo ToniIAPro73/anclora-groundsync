@@ -130,7 +130,7 @@ export const MonthGrid = ({ year, month, shifts, onEditShift }: MonthGridProps) 
 
             const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const dayShifts = getShiftsForDay(day);
-            const ownShifts = dayShifts.filter((shift) => getShiftOrigin(shift) === 'IMG');
+            const ownShifts = dayShifts.filter((shift) => getShiftOrigin(shift) === 'MAN');
             const companyShifts = dayShifts.filter((shift) => getShiftOrigin(shift) === 'PDF');
             const isToday = iso === todayISO;
             const isWeekend = index % 7 >= 5;

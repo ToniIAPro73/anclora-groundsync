@@ -31,7 +31,7 @@ export function normalizeShift(raw) {
     startTime: String(raw?.startTime ?? '').trim(),
     endTime: String(raw?.endTime ?? '').trim(),
     location: String(raw?.location ?? '').trim(),
-    origin: raw?.origin === 'PDF' ? 'PDF' : 'IMG',
+    origin: raw?.origin === 'PDF' ? 'PDF' : 'MAN',
   };
 }
 
@@ -42,6 +42,10 @@ export function validateShiftArray(value) {
   });
 }
 
+export function validateShiftIdArray(value) {
+  return Array.isArray(value) && value.every((item) => String(item ?? '').trim().length > 0);
+}
+
 async function ensureShiftsTable(sql) {
   await sql`
     CREATE TABLE IF NOT EXISTS shifts (
@@ -50,7 +54,7 @@ async function ensureShiftsTable(sql) {
       start_time TEXT NOT NULL DEFAULT '',
       end_time TEXT NOT NULL DEFAULT '',
       location TEXT NOT NULL,
-      origin TEXT NOT NULL DEFAULT 'IMG',
+      origin TEXT NOT NULL DEFAULT 'MAN',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
@@ -59,6 +63,12 @@ async function ensureShiftsTable(sql) {
   await sql`
     CREATE INDEX IF NOT EXISTS shifts_date_idx
     ON shifts (date)
+  `;
+
+  await sql`
+    UPDATE shifts
+    SET origin = 'MAN'
+    WHERE origin = 'IMG'
   `;
 }
 
@@ -88,19 +98,43 @@ export async function listShifts() {
   }));
 }
 
-export async function replaceAllShifts(rawShifts) {
+export async function upsertShifts(rawShifts) {
   const shifts = rawShifts.map(normalizeShift);
   const sql = getSql();
   await ensureShiftsTable(sql);
-
-  await sql`DELETE FROM shifts`;
 
   for (const shift of shifts) {
     await sql`
       INSERT INTO shifts (id, date, start_time, end_time, location, origin, updated_at)
       VALUES (${shift.id}, ${shift.date}, ${shift.startTime}, ${shift.endTime}, ${shift.location}, ${shift.origin}, NOW())
+      ON CONFLICT (id) DO UPDATE SET
+        date = EXCLUDED.date,
+        start_time = EXCLUDED.start_time,
+        end_time = EXCLUDED.end_time,
+        location = EXCLUDED.location,
+        origin = EXCLUDED.origin,
+        updated_at = NOW()
     `;
   }
 
   return shifts;
+}
+
+export async function deleteShiftsByIds(ids) {
+  const normalizedIds = [...new Set(ids.map((item) => String(item ?? '').trim()).filter(Boolean))];
+  if (normalizedIds.length === 0) {
+    return 0;
+  }
+
+  const sql = getSql();
+  await ensureShiftsTable(sql);
+
+  for (const id of normalizedIds) {
+    await sql`
+      DELETE FROM shifts
+      WHERE id = ${id}
+    `;
+  }
+
+  return normalizedIds.length;
 }

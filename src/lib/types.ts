@@ -1,5 +1,5 @@
 export type ShiftCategory = 'Mañana' | 'Tarde' | 'Noche';
-export type ShiftOrigin = 'IMG' | 'PDF';
+export type ShiftOrigin = 'MAN' | 'PDF';
 
 export interface Shift {
   id: string;

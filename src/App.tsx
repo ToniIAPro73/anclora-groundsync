@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Shift } from './lib/types';
 import { getMonthDaysISO, getDaysInMonth } from './lib/week';
-import { loadShifts, saveShifts } from './lib/storage';
+import { loadShifts, syncShiftChanges } from './lib/storage';
 import { getShiftOrigin, getShiftType, hasShiftTimes } from './lib/shifts';
 import { StatsBar } from './components/shift-dashboard/StatsBar';
 import { MonthHeader } from './components/shift-dashboard/MonthHeader';
@@ -30,7 +30,7 @@ function normalizeShift(shift: Shift): Shift {
     startTime: shift.startTime.trim(),
     endTime: shift.endTime.trim(),
     location: shift.location.trim(),
-    origin: shift.origin === 'PDF' ? 'PDF' : 'IMG',
+    origin: shift.origin === 'PDF' ? 'PDF' : 'MAN',
   };
 }
 
@@ -132,7 +132,6 @@ function describeShift(shift: Shift): string {
 }
 function App() {
   const [shifts, setShifts] = useState<Shift[]>([]);
-  const [isStorageReady, setIsStorageReady] = useState(false);
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     if (typeof window === 'undefined') {
       return 'system';
@@ -161,7 +160,6 @@ function App() {
       }
 
       setShifts(nextShifts);
-      setIsStorageReady(true);
     };
 
     void hydrateShifts();
@@ -170,14 +168,6 @@ function App() {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    if (!isStorageReady) {
-      return;
-    }
-
-    void saveShifts(shifts);
-  }, [shifts, isStorageReady]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -226,26 +216,38 @@ function App() {
     setCurrentMonth(d.getMonth());
   };
 
-  const handleSaveShift = (shift: Shift) => {
+  const handleSaveShift = async (shift: Shift) => {
     const conflict = findShiftConflict(shifts, shift);
     if (conflict) {
       window.alert(conflict);
       return;
     }
 
-    if (editingShiftId) {
-      setShifts((current) => insertShift(current, shift));
-    } else {
-      setShifts((current) => insertShift(current, shift));
+    const nextShifts = insertShift(shifts, shift);
+
+    try {
+      await syncShiftChanges(nextShifts, { upserts: [shift] });
+      setShifts(nextShifts);
+      setIsModalOpen(false);
+      setEditingShiftId(null);
+    } catch (error) {
+      console.error('Failed to persist shift', error);
+      window.alert('No se pudo guardar el turno en la base de datos. Inténtalo de nuevo.');
     }
-    setIsModalOpen(false);
-    setEditingShiftId(null);
   };
 
-  const handleDeleteShift = (id: string) => {
-    setShifts(shifts.filter(s => s.id !== id));
-    setIsModalOpen(false);
-    setEditingShiftId(null);
+  const handleDeleteShift = async (id: string) => {
+    const nextShifts = shifts.filter(s => s.id !== id);
+
+    try {
+      await syncShiftChanges(nextShifts, { deleteIds: [id] });
+      setShifts(nextShifts);
+      setIsModalOpen(false);
+      setEditingShiftId(null);
+    } catch (error) {
+      console.error('Failed to delete shift', error);
+      window.alert('No se pudo eliminar el turno de la base de datos. Inténtalo de nuevo.');
+    }
   };
 
   const handleEditShift = (id: string) => {
@@ -266,6 +268,8 @@ function App() {
     const normalizedIncoming = newShifts.map(normalizeShift);
     let working = [...snapshot];
     const pendingExistingPdfByDate = new Map<string, Shift[]>();
+    const upserts: Shift[] = [];
+    const deleteIds: string[] = [];
 
     for (const shift of normalizedIncoming) {
       const existingPdfShifts = pendingExistingPdfByDate.get(shift.date)
@@ -275,6 +279,7 @@ function App() {
 
       if (existingPdfShifts.length === 0) {
         working.push(shift);
+        upserts.push(shift);
         continue;
       }
 
@@ -292,17 +297,26 @@ function App() {
       }
 
       working = [...working.filter((existing) => existing.id !== existingShift.id), shift];
+      upserts.push(shift);
+      deleteIds.push(existingShift.id);
       pendingExistingPdfByDate.set(
         shift.date,
         existingPdfShifts.filter((existing) => existing.id !== existingShift.id),
       );
     }
 
-    setShifts(working);
-    setCurrentYear(targetPeriod.year);
-    setCurrentMonth(targetPeriod.month);
-    setIsImportOpen(false);
-    return true;
+    try {
+      await syncShiftChanges(working, { upserts, deleteIds });
+      setShifts(working);
+      setCurrentYear(targetPeriod.year);
+      setCurrentMonth(targetPeriod.month);
+      setIsImportOpen(false);
+      return true;
+    } catch (error) {
+      console.error('Failed to persist imported shifts', error);
+      window.alert('No se pudieron guardar los turnos importados en la base de datos. Inténtalo de nuevo.');
+      return false;
+    }
   };
 
   return (

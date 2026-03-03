@@ -9,7 +9,7 @@ export interface ParsedCalendarShift {
   date: string;
   startTime: string;
   endTime: string;
-  origin?: 'IMG' | 'PDF';
+  origin?: 'MAN' | 'PDF';
   isValid: boolean;
   confidence: number;
   rawText: string;

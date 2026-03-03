@@ -70,8 +70,8 @@ function SummaryLine({
 }
 
 export const StatsBar = ({ currentMonthShifts, daysInMonth, currentYearShifts, daysInYear }: StatsBarProps) => {
-  const ownMonthStats = useMemo(() => buildOriginStats(currentMonthShifts, daysInMonth, 'IMG'), [currentMonthShifts, daysInMonth]);
-  const ownYearStats = useMemo(() => buildOriginStats(currentYearShifts, daysInYear, 'IMG'), [currentYearShifts, daysInYear]);
+  const ownMonthStats = useMemo(() => buildOriginStats(currentMonthShifts, daysInMonth, 'MAN'), [currentMonthShifts, daysInMonth]);
+  const ownYearStats = useMemo(() => buildOriginStats(currentYearShifts, daysInYear, 'MAN'), [currentYearShifts, daysInYear]);
   const companyMonthStats = useMemo(() => buildOriginStats(currentMonthShifts, daysInMonth, 'PDF'), [currentMonthShifts, daysInMonth]);
   const companyYearStats = useMemo(() => buildOriginStats(currentYearShifts, daysInYear, 'PDF'), [currentYearShifts, daysInYear]);
 

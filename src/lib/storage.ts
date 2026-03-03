@@ -21,14 +21,20 @@ const normalizeShift = (shift: Shift): Shift => ({
   startTime: shift.startTime.trim(),
   endTime: shift.endTime.trim(),
   location: shift.location.trim(),
-  origin: shift.origin === 'PDF' ? 'PDF' : 'IMG',
+  origin: shift.origin === 'PDF' ? 'PDF' : 'MAN',
 });
+
+const writeLocalShifts = (shifts: Shift[]): void => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(shifts.map(normalizeShift)));
+};
 
 const loadLocalShifts = (): Shift[] => {
   const data = localStorage.getItem(STORAGE_KEY);
   if (!data) return [];
   try {
-    return (JSON.parse(data) as Shift[]).map(normalizeShift);
+    const shifts = (JSON.parse(data) as Shift[]).map(normalizeShift);
+    writeLocalShifts(shifts);
+    return shifts;
   } catch (e) {
     console.error('Failed to parse shifts from storage', e);
     return [];
@@ -55,36 +61,42 @@ async function readApiShifts(): Promise<Shift[]> {
   return payload.shifts.map(normalizeShift);
 }
 
-async function writeApiShifts(shifts: Shift[]): Promise<void> {
+async function patchApiShifts(upserts: Shift[], deleteIds: string[]): Promise<void> {
   const response = await fetch(SHIFTS_API_URL, {
-    method: 'PUT',
+    method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
     body: JSON.stringify({
-      shifts: shifts.map(normalizeShift),
+      upserts: upserts.map(normalizeShift),
+      deleteIds,
     }),
   });
 
   if (!response.ok) {
-    throw new Error(`PUT ${SHIFTS_API_URL} failed with ${response.status}`);
+    throw new Error(`PATCH ${SHIFTS_API_URL} failed with ${response.status}`);
   }
 }
 
-export const saveShifts = async (shifts: Shift[]): Promise<void> => {
-  const normalized = shifts.map(normalizeShift);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+export const syncShiftChanges = async (
+  nextShifts: Shift[],
+  changes: {
+    upserts?: Shift[];
+    deleteIds?: string[];
+  },
+): Promise<void> => {
+  const normalizedNext = nextShifts.map(normalizeShift);
+  const normalizedUpserts = (changes.upserts ?? []).map(normalizeShift);
+  const deleteIds = [...new Set((changes.deleteIds ?? []).map((value) => String(value).trim()).filter(Boolean))];
 
   if (!REMOTE_STORAGE_ENABLED) {
+    writeLocalShifts(normalizedNext);
     return;
   }
 
-  try {
-    await writeApiShifts(normalized);
-  } catch (error) {
-    console.error('Failed to sync shifts to API, keeping local cache', error);
-  }
+  await patchApiShifts(normalizedUpserts, deleteIds);
+  writeLocalShifts(normalizedNext);
 };
 
 export const loadShifts = async (): Promise<Shift[]> => {
@@ -100,7 +112,7 @@ export const loadShifts = async (): Promise<Shift[]> => {
       return localShifts;
     }
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteShifts));
+    writeLocalShifts(remoteShifts);
     return remoteShifts;
   } catch (error) {
     console.error('Failed to load shifts from API, using local cache', error);
