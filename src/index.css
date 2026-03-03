@@ -453,7 +453,8 @@ button:hover {
   font-size: 0.64rem;
   color: var(--text-muted);
   white-space: nowrap;
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--glass-border) transparent;
 }
 
 .totals-line-values::-webkit-scrollbar {
@@ -982,6 +983,40 @@ button:hover {
 
   .month-day-number {
     font-size: 0.68rem;
+  }
+}
+
+
+
+
+@media (max-width: 760px) {
+  .import-modal-overlay {
+    align-items: flex-start;
+    justify-content: stretch;
+    padding: 10px;
+    overflow-y: auto;
+  }
+
+  .import-modal-content {
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    padding: 16px;
+  }
+
+  .import-modal-grid {
+    grid-template-columns: 1fr !important;
+    overflow: visible !important;
+  }
+
+  .import-modal-left,
+  .import-modal-right {
+    overflow: visible !important;
+  }
+
+  .import-modal-right {
+    min-height: 360px;
   }
 }
 
