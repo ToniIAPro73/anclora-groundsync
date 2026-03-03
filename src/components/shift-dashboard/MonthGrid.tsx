@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Shift } from '../../lib/types';
 import { getDaysInMonth, getFirstWeekdayOfMonth, toISODate } from '../../lib/week';
 import { getShiftOrigin, getShiftType, hasShiftTimes } from '../../lib/shifts';
@@ -18,39 +19,32 @@ const typeColor: Record<string, string> = {
   Libre: '#ef4444',
 };
 
-function renderShiftBadge(shift: Shift, onEditShift: (id: string) => void) {
-  const shiftType = getShiftType(shift);
-  const shiftOrigin = getShiftOrigin(shift);
-  const accentColor = typeColor[shiftType] || '#3b82f6';
-  const hasTimes = hasShiftTimes(shift);
-  const originPrefix = shiftOrigin === 'PDF' ? '(E)' : '(P)';
-
-  return (
-    <div
-      key={shift.id}
-      className="month-shift-badge"
-      onClick={() => onEditShift(shift.id)}
-      style={{ borderLeft: `3px solid ${accentColor}`, color: accentColor }}
-      onMouseOver={(event) => { event.currentTarget.style.background = 'var(--shift-badge-hover-bg)'; }}
-      onMouseOut={(event) => { event.currentTarget.style.background = 'var(--shift-badge-bg)'; }}
-    >
-      {originPrefix} {shiftType}{hasTimes ? ` ${shift.startTime}–${shift.endTime}` : ''}
-    </div>
-  );
-}
-
-function renderOriginSection(
-  shifts: Shift[],
-  onEditShift: (id: string) => void,
-) {
-  return (
-    <div className="month-origin-section">
-      {shifts.map((shift) => renderShiftBadge(shift, onEditShift))}
-    </div>
-  );
-}
-
 export const MonthGrid = ({ year, month, shifts, onEditShift }: MonthGridProps) => {
+  const [expandedShiftId, setExpandedShiftId] = useState<string | null>(null);
+  const [isTouchUi, setIsTouchUi] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(pointer: coarse), (hover: none)');
+    const update = () => setIsTouchUi(mediaQuery.matches);
+    update();
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', update);
+      return () => mediaQuery.removeEventListener('change', update);
+    }
+
+    mediaQuery.addListener(update);
+    return () => mediaQuery.removeListener(update);
+  }, []);
+
+  useEffect(() => {
+    setExpandedShiftId(null);
+  }, [month, year, shifts.length]);
+
   const daysInMonth = getDaysInMonth(year, month);
   const firstWeekday = getFirstWeekdayOfMonth(year, month);
   const todayISO = toISODate(new Date());
@@ -64,6 +58,54 @@ export const MonthGrid = ({ year, month, shifts, onEditShift }: MonthGridProps) 
     const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     return shifts.filter((shift) => shift.date === iso);
   };
+
+  const handleShiftPress = (shift: Shift) => {
+    if (!isTouchUi) {
+      onEditShift(shift.id);
+      return;
+    }
+
+    if (expandedShiftId === shift.id) {
+      setExpandedShiftId(null);
+      onEditShift(shift.id);
+      return;
+    }
+
+    setExpandedShiftId(shift.id);
+  };
+
+  const renderShiftBadge = (shift: Shift) => {
+    const shiftType = getShiftType(shift);
+    const shiftOrigin = getShiftOrigin(shift);
+    const accentColor = typeColor[shiftType] || '#3b82f6';
+    const hasTimes = hasShiftTimes(shift);
+    const originPrefix = shiftOrigin === 'PDF' ? '(E)' : '(P)';
+    const isExpanded = expandedShiftId === shift.id;
+
+    return (
+      <button
+        type="button"
+        key={shift.id}
+        className={isExpanded ? 'month-shift-badge is-expanded' : 'month-shift-badge'}
+        onClick={() => handleShiftPress(shift)}
+        onBlur={() => {
+          if (expandedShiftId === shift.id) {
+            setExpandedShiftId(null);
+          }
+        }}
+        style={{ borderLeft: `3px solid ${accentColor}`, color: accentColor }}
+        title={`${originPrefix} ${shiftType}${hasTimes ? ` ${shift.startTime}-${shift.endTime}` : ''}`}
+      >
+        {originPrefix} {shiftType}{hasTimes ? ` ${shift.startTime}–${shift.endTime}` : ''}
+      </button>
+    );
+  };
+
+  const renderOriginSection = (dayShifts: Shift[]) => (
+    <div className="month-origin-section">
+      {dayShifts.map((shift) => renderShiftBadge(shift))}
+    </div>
+  );
 
   return (
     <div className="month-grid-shell">
@@ -97,6 +139,11 @@ export const MonthGrid = ({ year, month, shifts, onEditShift }: MonthGridProps) 
               <div
                 key={day}
                 className="month-day-cell"
+                onClick={() => {
+                  if (expandedShiftId) {
+                    setExpandedShiftId(null);
+                  }
+                }}
                 style={{
                   background: isToday ? 'var(--day-today-bg)' : 'var(--glass-bg)',
                   border: isToday ? '1px solid var(--color-gold)' : '1px solid var(--border-soft)',
@@ -111,8 +158,8 @@ export const MonthGrid = ({ year, month, shifts, onEditShift }: MonthGridProps) 
                 </div>
 
                 <div className="month-day-sections">
-                  {renderOriginSection(ownShifts, onEditShift)}
-                  {renderOriginSection(companyShifts, onEditShift)}
+                  {renderOriginSection(ownShifts)}
+                  {renderOriginSection(companyShifts)}
                 </div>
               </div>
             );
