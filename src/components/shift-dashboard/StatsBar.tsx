@@ -31,6 +31,10 @@ function TotalToken({
   );
 }
 
+function SectionToken({ label }: { label: string }) {
+  return <span className="totals-section-label">{label}</span>;
+}
+
 function formatJtValue(stats: WeeklyStats): string {
   return `${stats.hoursByType.JT.toFixed(1)}h / ${stats.daysByType.JT}d`;
 }
@@ -48,12 +52,16 @@ function SummaryLine({
     <div className="totals-line">
       <div className="totals-line-title">{title}</div>
       <div className="totals-line-values">
+        <SectionToken label="Tot. mensuales" />
         <TotalToken label="Mes" value={monthStats.weeklyHours.toFixed(1)} suffix="h" />
         <TotalToken label="Regular" value={monthStats.hoursByType.Regular.toFixed(1)} suffix="h" className="type-regular" />
         <TotalToken label="JT" value={formatJtValue(monthStats)} suffix="" className="type-jt" />
         <TotalToken label="Libres" value={String(monthStats.freeDays)} suffix="d" className="type-libre" />
         <TotalToken label="Extras" value={monthStats.hoursByType.Extras.toFixed(1)} suffix="h" className="type-extras" />
+        <SectionToken label="Tot. anuales" />
         <TotalToken label="Año" value={yearStats.weeklyHours.toFixed(1)} suffix="h" />
+        <TotalToken label="JT" value={formatJtValue(yearStats)} suffix="" className="type-jt" />
+        <TotalToken label="Extras" value={yearStats.hoursByType.Extras.toFixed(1)} suffix="h" className="type-extras" />
       </div>
     </div>
   );
