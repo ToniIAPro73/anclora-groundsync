@@ -444,21 +444,17 @@ button:hover {
 }
 
 .totals-line-values {
-  --totals-section-col: 56px;
-  --totals-token-col: 126px;
+  --totals-col-width: 132px;
   display: grid;
-  grid-template-columns:
-    var(--totals-section-col)
-    repeat(5, var(--totals-token-col))
-    var(--totals-section-col)
-    repeat(5, var(--totals-token-col));
+  grid-template-columns: repeat(12, var(--totals-col-width));
   align-items: center;
-  column-gap: 8px;
+  justify-content: start;
+  column-gap: 0;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 2px;
-  padding-right: 10px;
+  padding-right: 18px;
   font-size: 0.62rem;
   color: var(--text-muted);
   white-space: nowrap;
@@ -472,6 +468,7 @@ button:hover {
 }
 
 .totals-section-label {
+  display: block;
   min-width: 0;
   font-size: 0.58rem;
   font-weight: 800;
@@ -479,13 +476,14 @@ button:hover {
   text-transform: uppercase;
   color: var(--text-subtle);
   white-space: nowrap;
-  text-align: left;
+  text-align: center;
 }
 
 .totals-token {
+  display: block;
   min-width: 0;
   color: var(--text-primary);
-  text-align: left;
+  text-align: center;
 }
 
 .totals-token strong {
@@ -780,8 +778,7 @@ button:hover {
 
 @media (max-width: 1280px) {
   .totals-line-values {
-    --totals-section-col: 52px;
-    --totals-token-col: 118px;
+    --totals-col-width: 122px;
     font-size: 0.58rem;
   }
 }
@@ -851,8 +848,7 @@ button:hover {
   }
 
   .totals-line-values {
-    --totals-section-col: 50px;
-    --totals-token-col: 112px;
+    --totals-col-width: 116px;
     font-size: 0.58rem;
   }
 
@@ -956,8 +952,7 @@ button:hover {
   }
 
   .totals-line-values {
-    --totals-section-col: 48px;
-    --totals-token-col: 108px;
+    --totals-col-width: 110px;
     font-size: 0.56rem;
   }
 
