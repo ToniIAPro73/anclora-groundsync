@@ -98,40 +98,105 @@ export const getNextShift = (shifts: Shift[], now: Date = new Date()): Shift | n
   })[0];
 };
 
+function getShiftIntervals(shift: Shift): Array<[number, number]> {
+  if (!hasShiftTimes(shift)) {
+    return [];
+  }
+
+  const start = parseHHMM(shift.startTime);
+  const endBase = parseHHMM(shift.endTime);
+  const end = endBase <= start ? endBase + (24 * 60) : endBase;
+
+  if (end <= 24 * 60) {
+    return [[start, end]];
+  }
+
+  return [
+    [start, 24 * 60],
+    [0, end - (24 * 60)],
+  ];
+}
+
+function mergeIntervals(intervals: Array<[number, number]>): Array<[number, number]> {
+  if (intervals.length === 0) {
+    return [];
+  }
+
+  const sorted = [...intervals].sort((left, right) => left[0] - right[0] || left[1] - right[1]);
+  const merged: Array<[number, number]> = [sorted[0]];
+
+  for (let index = 1; index < sorted.length; index += 1) {
+    const current = sorted[index];
+    const last = merged[merged.length - 1];
+
+    if (current[0] <= last[1]) {
+      last[1] = Math.max(last[1], current[1]);
+      continue;
+    }
+
+    merged.push([...current] as [number, number]);
+  }
+
+  return merged;
+}
+
+function sumIntervalsMinutes(intervals: Array<[number, number]>): number {
+  return mergeIntervals(intervals).reduce((total, [start, end]) => total + (end - start), 0);
+}
+
 /**
  * Aggregates statistics for a set of shifts over a given number of days.
  */
 export const aggregateWeeklyStats = (shifts: Shift[], totalDays: number = 7): WeeklyStats => {
-  const enriched = shifts.map(enrichShift);
-  const weeklyHours = enriched.reduce((acc, s) => acc + s.duration, 0);
-
-  const explicitFreeDays = new Set(shifts.filter(isFreeShift).map(s => s.date)).size;
-  const busyDays = new Set(shifts.filter(s => !isFreeShift(s)).map(s => s.date)).size;
-  const freeDays = explicitFreeDays + Math.max(0, totalDays - explicitFreeDays - busyDays);
+  const explicitFreeDaySet = new Set(shifts.filter(isFreeShift).map((shift) => shift.date));
+  const workedDaySet = new Set(shifts.filter((shift) => !isFreeShift(shift)).map((shift) => shift.date));
+  const freeDays = explicitFreeDaySet.size + Math.max(0, totalDays - explicitFreeDaySet.size - workedDaySet.size);
   const hoursByType = {
     Regular: 0,
     JT: 0,
     Extras: 0,
+    Libre: 0,
   };
-  const jtDays = new Set<string>();
+  const daysByType = {
+    Regular: new Set<string>(),
+    JT: new Set<string>(),
+    Extras: new Set<string>(),
+    Libre: new Set<string>(),
+  };
+
+  const intervalsByDate = new Map<string, Array<[number, number]>>();
 
   for (const shift of shifts) {
     const type = getShiftType(shift);
-    if (type === 'Regular' || type === 'JT' || type === 'Extras') {
-      hoursByType[type] += enrichShift(shift).duration;
+    const enriched = enrichShift(shift);
+
+    if (type === 'Regular' || type === 'JT' || type === 'Extras' || type === 'Libre') {
+      hoursByType[type] += enriched.duration;
+      daysByType[type].add(shift.date);
     }
 
-    if (type === 'JT') {
-      jtDays.add(shift.date);
+    if (!isFreeShift(shift)) {
+      const currentIntervals = intervalsByDate.get(shift.date) ?? [];
+      currentIntervals.push(...getShiftIntervals(shift));
+      intervalsByDate.set(shift.date, currentIntervals);
     }
   }
 
+  const totalWorkedMinutes = Array.from(intervalsByDate.values()).reduce(
+    (total, intervals) => total + sumIntervalsMinutes(intervals),
+    0,
+  );
+
   return {
-    weeklyHours,
+    totalWorkedHours: totalWorkedMinutes / 60,
+    totalWorkedDays: workedDaySet.size,
     freeDays,
     hoursByType,
     daysByType: {
-      JT: jtDays.size,
+      Regular: daysByType.Regular.size,
+      JT: daysByType.JT.size,
+      Extras: daysByType.Extras.size,
+      Libre: freeDays,
     },
   };
 };

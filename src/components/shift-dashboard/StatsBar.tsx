@@ -35,8 +35,8 @@ function SectionToken({ label }: { label: string }) {
   return <span className="totals-section-label">{label}</span>;
 }
 
-function formatJtValue(stats: WeeklyStats): string {
-  return `${stats.hoursByType.JT.toFixed(1)}h / ${stats.daysByType.JT}d`;
+function formatTokenValue(hours: number, days: number): string {
+  return `${hours.toFixed(1)}h / ${days}d`;
 }
 
 function SummaryLine({
@@ -52,18 +52,18 @@ function SummaryLine({
     <div className="totals-line">
       <div className="totals-line-title">{title}</div>
       <div className="totals-line-values">
-        <SectionToken label="Tot. mensuales" />
-        <TotalToken label="Mes" value={monthStats.weeklyHours.toFixed(1)} suffix="h" />
-        <TotalToken label="Regular" value={monthStats.hoursByType.Regular.toFixed(1)} suffix="h" className="type-regular" />
-        <TotalToken label="JT" value={formatJtValue(monthStats)} suffix="" className="type-jt" />
-        <TotalToken label="Libres" value={String(monthStats.freeDays)} suffix="d" className="type-libre" />
-        <TotalToken label="Extras" value={monthStats.hoursByType.Extras.toFixed(1)} suffix="h" className="type-extras" />
-        <SectionToken label="Tot. anuales" />
-        <TotalToken label="Año" value={yearStats.weeklyHours.toFixed(1)} suffix="h" />
-        <TotalToken label="Regular" value={yearStats.hoursByType.Regular.toFixed(1)} suffix="h" className="type-regular" />
-        <TotalToken label="JT" value={formatJtValue(yearStats)} suffix="" className="type-jt" />
-        <TotalToken label="Libres" value={String(yearStats.freeDays)} suffix="d" className="type-libre" />
-        <TotalToken label="Extras" value={yearStats.hoursByType.Extras.toFixed(1)} suffix="h" className="type-extras" />
+        <SectionToken label="Tot. M." />
+        <TotalToken label="Mes" value={formatTokenValue(monthStats.totalWorkedHours, monthStats.totalWorkedDays)} suffix="" />
+        <TotalToken label="Regular" value={formatTokenValue(monthStats.hoursByType.Regular, monthStats.daysByType.Regular)} suffix="" className="type-regular" />
+        <TotalToken label="JT" value={formatTokenValue(monthStats.hoursByType.JT, monthStats.daysByType.JT)} suffix="" className="type-jt" />
+        <TotalToken label="Libres" value={formatTokenValue(monthStats.hoursByType.Libre, monthStats.daysByType.Libre)} suffix="" className="type-libre" />
+        <TotalToken label="Extras" value={formatTokenValue(monthStats.hoursByType.Extras, monthStats.daysByType.Extras)} suffix="" className="type-extras" />
+        <SectionToken label="Tot. A." />
+        <TotalToken label="Año" value={formatTokenValue(yearStats.totalWorkedHours, yearStats.totalWorkedDays)} suffix="" />
+        <TotalToken label="Regular" value={formatTokenValue(yearStats.hoursByType.Regular, yearStats.daysByType.Regular)} suffix="" className="type-regular" />
+        <TotalToken label="JT" value={formatTokenValue(yearStats.hoursByType.JT, yearStats.daysByType.JT)} suffix="" className="type-jt" />
+        <TotalToken label="Libres" value={formatTokenValue(yearStats.hoursByType.Libre, yearStats.daysByType.Libre)} suffix="" className="type-libre" />
+        <TotalToken label="Extras" value={formatTokenValue(yearStats.hoursByType.Extras, yearStats.daysByType.Extras)} suffix="" className="type-extras" />
       </div>
     </div>
   );

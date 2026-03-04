@@ -446,12 +446,13 @@ button:hover {
 .totals-line-values {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 2px;
-  font-size: 0.64rem;
+  padding-right: 10px;
+  font-size: 0.62rem;
   color: var(--text-muted);
   white-space: nowrap;
   scrollbar-width: thin;
@@ -464,7 +465,7 @@ button:hover {
 
 .totals-section-label {
   flex: 0 0 auto;
-  min-width: 108px;
+  min-width: 64px;
   font-size: 0.58rem;
   font-weight: 800;
   letter-spacing: 0.05em;
@@ -475,7 +476,7 @@ button:hover {
 
 .totals-token {
   flex: 0 0 auto;
-  min-width: 88px;
+  min-width: 108px;
   color: var(--text-primary);
 }
 
@@ -771,16 +772,16 @@ button:hover {
 
 @media (max-width: 1280px) {
   .totals-line-values {
-    gap: 10px;
-    font-size: 0.6rem;
+    gap: 8px;
+    font-size: 0.58rem;
   }
 
   .totals-section-label {
-    min-width: 100px;
+    min-width: 58px;
   }
 
   .totals-token {
-    min-width: 82px;
+    min-width: 100px;
   }
 }
 
@@ -854,11 +855,11 @@ button:hover {
   }
 
   .totals-section-label {
-    min-width: 96px;
+    min-width: 56px;
   }
 
   .totals-token {
-    min-width: 80px;
+    min-width: 96px;
   }
 
   .month-grid-root {
@@ -966,11 +967,11 @@ button:hover {
   }
 
   .totals-section-label {
-    min-width: 92px;
+    min-width: 52px;
   }
 
   .totals-token {
-    min-width: 76px;
+    min-width: 92px;
   }
 
   .month-grid-root {
