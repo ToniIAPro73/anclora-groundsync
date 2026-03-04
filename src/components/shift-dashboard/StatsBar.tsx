@@ -36,7 +36,8 @@ function SectionToken({ label }: { label: string }) {
 }
 
 function formatTokenValue(hours: number, days: number): string {
-  return `${hours.toFixed(1)}h / ${days}d`;
+  const normalizedDays = hours === 0 ? 0 : days;
+  return `${hours.toFixed(1)}h / ${normalizedDays}d`;
 }
 
 function SummaryLine({
