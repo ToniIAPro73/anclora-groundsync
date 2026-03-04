@@ -484,7 +484,7 @@ button:hover {
   column-gap: 0;
   overflow: hidden;
   padding-bottom: 2px;
-  padding-right: 18px;
+  padding-right: 0;
   font-size: 0.62rem;
   color: var(--text-muted);
   white-space: nowrap;
