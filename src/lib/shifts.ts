@@ -9,6 +9,7 @@ export const normalizeShiftTypeLabel = (value: string): string => {
   if (normalized === 'jt') return 'JT';
   if (normalized === 'libre') return 'Libre';
   if (normalized === 'extras') return 'Extras';
+  if (normalized === 'vacaciones' || normalized === 'vac.' || normalized === 'vac') return 'Vacaciones';
   if (normalized === 'regular') return 'Regular';
 
   const importedMatch = normalized.match(/^importado\s*\(([^)]+)\)$/i);
@@ -36,6 +37,10 @@ export const hasShiftTimes = (shift: Shift): boolean =>
   !isEmptyTime(shift.startTime) && !isEmptyTime(shift.endTime);
 
 export const isFreeShift = (shift: Shift): boolean => getShiftType(shift) === 'Libre';
+export const isZeroDurationShift = (shift: Shift): boolean => {
+  const type = getShiftType(shift);
+  return type === 'Libre' || type === 'Vacaciones';
+};
 export const getShiftOrigin = (shift: Shift): ShiftOrigin => shift.origin === 'PDF' ? 'PDF' : 'MAN';
 
 /**
@@ -67,7 +72,7 @@ export const computeShiftCategory = (startTime: string): ShiftCategory => {
 export const enrichShift = (shift: Shift): ShiftWithDerived => ({
   ...shift,
   category: computeShiftCategory(shift.startTime),
-  duration: isFreeShift(shift) ? 0 : durationMinutes(shift.startTime, shift.endTime) / 60,
+  duration: isZeroDurationShift(shift) ? 0 : durationMinutes(shift.startTime, shift.endTime) / 60,
 });
 
 /**
@@ -149,19 +154,21 @@ function sumIntervalsMinutes(intervals: Array<[number, number]>): number {
  */
 export const aggregateWeeklyStats = (shifts: Shift[], totalDays: number = 7): WeeklyStats => {
   const explicitFreeDaySet = new Set(shifts.filter(isFreeShift).map((shift) => shift.date));
-  const workedDaySet = new Set(shifts.filter((shift) => !isFreeShift(shift)).map((shift) => shift.date));
+  const workedDaySet = new Set(shifts.filter((shift) => !isZeroDurationShift(shift)).map((shift) => shift.date));
   const freeDays = explicitFreeDaySet.size + Math.max(0, totalDays - explicitFreeDaySet.size - workedDaySet.size);
   const hoursByType = {
     Regular: 0,
     JT: 0,
     Extras: 0,
     Libre: 0,
+    Vacaciones: 0,
   };
   const daysByType = {
     Regular: new Set<string>(),
     JT: new Set<string>(),
     Extras: new Set<string>(),
     Libre: new Set<string>(),
+    Vacaciones: new Set<string>(),
   };
 
   const intervalsByDate = new Map<string, Array<[number, number]>>();
@@ -170,12 +177,12 @@ export const aggregateWeeklyStats = (shifts: Shift[], totalDays: number = 7): We
     const type = getShiftType(shift);
     const enriched = enrichShift(shift);
 
-    if (type === 'Regular' || type === 'JT' || type === 'Extras' || type === 'Libre') {
+    if (type === 'Regular' || type === 'JT' || type === 'Extras' || type === 'Libre' || type === 'Vacaciones') {
       hoursByType[type] += enriched.duration;
       daysByType[type].add(shift.date);
     }
 
-    if (!isFreeShift(shift)) {
+    if (!isZeroDurationShift(shift)) {
       const currentIntervals = intervalsByDate.get(shift.date) ?? [];
       currentIntervals.push(...getShiftIntervals(shift));
       intervalsByDate.set(shift.date, currentIntervals);
@@ -189,7 +196,12 @@ export const aggregateWeeklyStats = (shifts: Shift[], totalDays: number = 7): We
 
   return {
     totalWorkedHours: totalWorkedMinutes / 60,
-    totalWorkedDays: workedDaySet.size,
+    totalWorkedDays:
+      daysByType.Regular.size
+      + daysByType.JT.size
+      + daysByType.Extras.size
+      + daysByType.Libre.size
+      + daysByType.Vacaciones.size,
     freeDays,
     hoursByType,
     daysByType: {
@@ -197,6 +209,7 @@ export const aggregateWeeklyStats = (shifts: Shift[], totalDays: number = 7): We
       JT: daysByType.JT.size,
       Extras: daysByType.Extras.size,
       Libre: daysByType.Libre.size,
+      Vacaciones: daysByType.Vacaciones.size,
     },
   };
 };

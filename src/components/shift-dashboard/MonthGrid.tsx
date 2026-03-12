@@ -8,6 +8,7 @@ interface MonthGridProps {
   month: number;
   shifts: Shift[];
   onEditShift: (id: string) => void;
+  onCreateShift: (date: string) => void;
 }
 
 const WEEKDAY_LABELS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
@@ -17,9 +18,10 @@ const typeColor: Record<string, string> = {
   JT: '#a78bfa',
   Extras: '#D4AF37',
   Libre: '#ef4444',
+  Vacaciones: '#16a34a',
 };
 
-export const MonthGrid = ({ year, month, shifts, onEditShift }: MonthGridProps) => {
+export const MonthGrid = ({ year, month, shifts, onEditShift, onCreateShift }: MonthGridProps) => {
   const [expandedShiftId, setExpandedShiftId] = useState<string | null>(null);
   const [isTouchUi, setIsTouchUi] = useState(false);
 
@@ -87,7 +89,10 @@ export const MonthGrid = ({ year, month, shifts, onEditShift }: MonthGridProps) 
         type="button"
         key={shift.id}
         className={isExpanded ? 'month-shift-badge is-expanded' : 'month-shift-badge'}
-        onClick={() => handleShiftPress(shift)}
+        onClick={(event) => {
+          event.stopPropagation();
+          handleShiftPress(shift);
+        }}
         onBlur={() => {
           if (expandedShiftId === shift.id) {
             setExpandedShiftId(null);
@@ -138,14 +143,20 @@ export const MonthGrid = ({ year, month, shifts, onEditShift }: MonthGridProps) 
             const visibleShifts = [...ownShifts, ...companyShifts];
             const isToday = iso === todayISO;
             const isWeekend = index % 7 >= 5;
+            const canCreateShift = visibleShifts.length === 0;
 
             return (
               <div
                 key={day}
-                className="month-day-cell"
+                className={canCreateShift ? 'month-day-cell is-creatable' : 'month-day-cell'}
                 onClick={() => {
                   if (expandedShiftId) {
                     setExpandedShiftId(null);
+                    return;
+                  }
+
+                  if (canCreateShift) {
+                    onCreateShift(iso);
                   }
                 }}
                 style={{

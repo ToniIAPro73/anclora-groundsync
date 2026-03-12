@@ -24,11 +24,13 @@ export interface WeeklyStats {
     JT: number;
     Extras: number;
     Libre: number;
+    Vacaciones: number;
   };
   daysByType: {
     Regular: number;
     JT: number;
     Extras: number;
     Libre: number;
+    Vacaciones: number;
   };
 }

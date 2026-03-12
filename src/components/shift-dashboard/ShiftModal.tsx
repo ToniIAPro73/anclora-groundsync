@@ -6,13 +6,14 @@ import { X, Trash2, Save, Calendar } from 'lucide-react';
 interface ShiftModalProps {
   isOpen: boolean;
   editingShift: Shift | null;
+  defaultDate?: string | null;
   onClose: () => void;
   onSave: (shift: Shift) => void;
   onDelete?: (id: string) => void;
 }
 
-export const ShiftModal = ({ isOpen, editingShift, onClose, onSave, onDelete }: ShiftModalProps) => {
-  const shiftTypeOptions = ['JT', 'Regular', 'Libre', 'Extras'];
+export const ShiftModal = ({ isOpen, editingShift, defaultDate = null, onClose, onSave, onDelete }: ShiftModalProps) => {
+  const shiftTypeOptions = ['JT', 'Regular', 'Libre', 'Extras', 'Vacaciones'];
   const [formData, setFormData] = useState<Shift>({
     id: '',
     date: new Date().toISOString().split('T')[0],
@@ -31,14 +32,14 @@ export const ShiftModal = ({ isOpen, editingShift, onClose, onSave, onDelete }: 
     } else {
       setFormData({
         id: crypto.randomUUID(),
-        date: new Date().toISOString().split('T')[0],
+        date: defaultDate ?? new Date().toISOString().split('T')[0],
         startTime: '08:00',
         endTime: '15:00',
         location: 'Regular',
         origin: 'MAN',
       });
     }
-  }, [editingShift, isOpen]);
+  }, [defaultDate, editingShift, isOpen]);
 
   if (!isOpen) return null;
 
@@ -103,11 +104,12 @@ export const ShiftModal = ({ isOpen, editingShift, onClose, onSave, onDelete }: 
               value={formData.location}
               onChange={e => {
                 const nextType = normalizeShiftTypeLabel(e.target.value) || 'Regular';
+                const isZeroDurationType = nextType === 'Libre' || nextType === 'Vacaciones';
                 setFormData({
                   ...formData,
                   location: nextType,
-                  startTime: nextType === 'Libre' ? '' : (formData.startTime || '08:00'),
-                  endTime: nextType === 'Libre' ? '' : (formData.endTime || '15:00'),
+                  startTime: isZeroDurationType ? '' : (formData.startTime || '08:00'),
+                  endTime: isZeroDurationType ? '' : (formData.endTime || '15:00'),
                 });
               }}
             >

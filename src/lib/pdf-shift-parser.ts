@@ -19,6 +19,13 @@ interface EmployeeSelector {
   employeeId: string;
 }
 
+interface RawPdfTextItem {
+  str?: string;
+  transform?: number[];
+  width?: number;
+  height?: number;
+}
+
 function deduceYearFromItems(items: PdfTextItem[]): number {
   const yearTokens = items
     .map((item) => item.text.match(/\b(20\d{2})\b/))
@@ -152,7 +159,7 @@ async function extractPdfTextItems(file: File): Promise<PdfTextItem[]> {
     const page = await document.getPage(pageIndex);
     const content = await page.getTextContent();
 
-    for (const rawItem of content.items as Array<any>) {
+    for (const rawItem of content.items as RawPdfTextItem[]) {
       const text = String(rawItem.str ?? '').trim();
       if (!text) {
         continue;

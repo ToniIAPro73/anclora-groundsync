@@ -159,6 +159,7 @@ function App() {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isJTCounterOpen, setIsJTCounterOpen] = useState(false);
   const [editingShiftId, setEditingShiftId] = useState<string | null>(null);
+  const [draftShiftDate, setDraftShiftDate] = useState<string | null>(null);
   const [importConflictState, setImportConflictState] = useState<ImportConflictState | null>(null);
 
   useEffect(() => {
@@ -241,6 +242,7 @@ function App() {
       setShifts(nextShifts);
       setIsModalOpen(false);
       setEditingShiftId(null);
+      setDraftShiftDate(null);
     } catch (error) {
       console.error('Failed to persist shift', error);
       window.alert('No se pudo guardar el turno en la base de datos. Inténtalo de nuevo.');
@@ -255,6 +257,7 @@ function App() {
       setShifts(nextShifts);
       setIsModalOpen(false);
       setEditingShiftId(null);
+      setDraftShiftDate(null);
     } catch (error) {
       console.error('Failed to delete shift', error);
       window.alert('No se pudo eliminar el turno de la base de datos. Inténtalo de nuevo.');
@@ -262,7 +265,14 @@ function App() {
   };
 
   const handleEditShift = (id: string) => {
+    setDraftShiftDate(null);
     setEditingShiftId(id);
+    setIsModalOpen(true);
+  };
+
+  const handleCreateShiftForDate = (date: string) => {
+    setEditingShiftId(null);
+    setDraftShiftDate(date);
     setIsModalOpen(true);
   };
 
@@ -341,6 +351,7 @@ function App() {
         onOpenJTCounter={() => setIsJTCounterOpen(true)}
         onAddShift={() => {
           setEditingShiftId(null);
+          setDraftShiftDate(null);
           setIsModalOpen(true);
         }}
         onImport={() => setIsImportOpen(true)}
@@ -360,6 +371,7 @@ function App() {
             month={currentMonth}
             shifts={currentMonthShifts}
             onEditShift={handleEditShift}
+            onCreateShift={handleCreateShiftForDate}
           />
         </section>
       </div>
@@ -367,7 +379,11 @@ function App() {
       <ShiftModal
         isOpen={isModalOpen}
         editingShift={editingShift}
-        onClose={() => setIsModalOpen(false)}
+        defaultDate={draftShiftDate}
+        onClose={() => {
+          setIsModalOpen(false);
+          setDraftShiftDate(null);
+        }}
         onSave={handleSaveShift}
         onDelete={handleDeleteShift}
       />

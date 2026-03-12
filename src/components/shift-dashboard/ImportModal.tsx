@@ -17,6 +17,21 @@ interface ModalSelectOption {
   label: string;
 }
 
+const MONTH_OPTIONS = [
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
+];
+
 function isFreeShift(shift: Pick<ParsedCalendarShift, 'shiftType'>): boolean {
   return (shift.shiftType ?? '').trim().toLowerCase() === 'libre';
 }
@@ -148,22 +163,8 @@ export const ImportModal = ({ isOpen, onClose, onConfirmImport, initialContext }
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const availableYears = Array.from({ length: 7 }, (_, index) => String(now.getFullYear() - 2 + index));
-  const monthOptions = [
-    'Enero',
-    'Febrero',
-    'Marzo',
-    'Abril',
-    'Mayo',
-    'Junio',
-    'Julio',
-    'Agosto',
-    'Septiembre',
-    'Octubre',
-    'Noviembre',
-    'Diciembre',
-  ];
   const monthSelectOptions = useMemo(
-    () => monthOptions.map((label, index) => ({ value: String(index), label })),
+    () => MONTH_OPTIONS.map((label, index) => ({ value: String(index), label })),
     [],
   );
   const yearSelectOptions = useMemo(
@@ -230,9 +231,10 @@ export const ImportModal = ({ isOpen, onClose, onConfirmImport, initialContext }
       if (shifts.length === 0) {
         setError('No se detectaron turnos para el empleado indicado dentro del PDF.');
       }
-    } catch (importError: any) {
+    } catch (importError: unknown) {
       console.error('[ImportModal][PDF] Error:', importError);
-      setError(`Error: ${importError?.message || 'Error desconocido'}`);
+      const message = importError instanceof Error ? importError.message : 'Error desconocido';
+      setError(`Error: ${message}`);
     } finally {
       setLoading(false);
     }
@@ -256,14 +258,18 @@ export const ImportModal = ({ isOpen, onClose, onConfirmImport, initialContext }
 
     const finalShifts: Shift[] = parsedShifts
       .filter(hasImportableShiftData)
-      .map((shift) => ({
-        id: crypto.randomUUID(),
-        date: shift.date,
-        startTime: shift.startTime === '??:??' ? '' : shift.startTime,
-        endTime: shift.endTime === '??:??' ? '' : shift.endTime,
-        location: normalizeShiftTypeLabel(shift.shiftType ?? '') || 'Regular',
-        origin: 'PDF',
-      }));
+      .map((shift) => {
+        const normalizedType = normalizeShiftTypeLabel(shift.shiftType ?? '');
+
+        return {
+          id: crypto.randomUUID(),
+          date: shift.date,
+          startTime: shift.startTime === '??:??' ? '' : shift.startTime,
+          endTime: shift.endTime === '??:??' ? '' : shift.endTime,
+          location: normalizedType === 'Vacaciones' ? 'Regular' : (normalizedType || 'Regular'),
+          origin: 'PDF',
+        };
+      });
 
     onConfirmImport(finalShifts, importContext);
     onClose();

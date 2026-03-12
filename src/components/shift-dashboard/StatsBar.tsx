@@ -38,8 +38,7 @@ function SectionToken({ label }: { label: string }) {
 }
 
 function formatTokenValue(hours: number, days: number): string {
-  const normalizedDays = hours === 0 ? 0 : days;
-  return `${hours.toFixed(1)}h / ${normalizedDays}d`;
+  return `${hours.toFixed(1)}h / ${days}d`;
 }
 
 function buildSummaryCells(monthStats: WeeklyStats, yearStats: WeeklyStats): StatsCell[] {
@@ -50,12 +49,14 @@ function buildSummaryCells(monthStats: WeeklyStats, yearStats: WeeklyStats): Sta
     { kind: 'token', label: 'JT', value: formatTokenValue(monthStats.hoursByType.JT, monthStats.daysByType.JT), className: 'type-jt' },
     { kind: 'token', label: 'Libres', value: formatTokenValue(monthStats.hoursByType.Libre, monthStats.daysByType.Libre), className: 'type-libre' },
     { kind: 'token', label: 'Extras', value: formatTokenValue(monthStats.hoursByType.Extras, monthStats.daysByType.Extras), className: 'type-extras' },
+    { kind: 'token', label: 'VAC.', value: formatTokenValue(monthStats.hoursByType.Vacaciones, monthStats.daysByType.Vacaciones), className: 'type-vacaciones' },
     { kind: 'section', label: 'Tot. A.' },
     { kind: 'token', label: 'Año', value: formatTokenValue(yearStats.totalWorkedHours, yearStats.totalWorkedDays) },
     { kind: 'token', label: 'Regular', value: formatTokenValue(yearStats.hoursByType.Regular, yearStats.daysByType.Regular), className: 'type-regular' },
     { kind: 'token', label: 'JT', value: formatTokenValue(yearStats.hoursByType.JT, yearStats.daysByType.JT), className: 'type-jt' },
     { kind: 'token', label: 'Libres', value: formatTokenValue(yearStats.hoursByType.Libre, yearStats.daysByType.Libre), className: 'type-libre' },
     { kind: 'token', label: 'Extras', value: formatTokenValue(yearStats.hoursByType.Extras, yearStats.daysByType.Extras), className: 'type-extras' },
+    { kind: 'token', label: 'VAC.', value: formatTokenValue(yearStats.hoursByType.Vacaciones, yearStats.daysByType.Vacaciones), className: 'type-vacaciones' },
   ];
 }
 
@@ -102,17 +103,19 @@ function buildSharedColumnWidths(
       getCellContentWidth(row[index], sectionFont, tokenFont, sectionLetterSpacing, tokenLetterSpacing),
     )),
   );
+  const sectionColumnIndexes = rows[0]
+    .map((cell, index) => cell.kind === 'section' ? index : -1)
+    .filter((index) => index >= 0);
 
   const sharedFixedWidth = Math.ceil(
     Math.max(
       titleContentWidth + 5,
-      columnContentWidths[0] + sidePadding,
-      columnContentWidths[6] + sidePadding,
+      ...sectionColumnIndexes.map((index) => columnContentWidths[index] + sidePadding),
     ),
   );
 
   const contentWidths = columnContentWidths.map((width, index) => {
-    if (index === 0 || index === 6) return sharedFixedWidth;
+    if (sectionColumnIndexes.includes(index)) return sharedFixedWidth;
     return Math.ceil(width + sidePadding);
   });
 
