@@ -1,12 +1,20 @@
 import { useEffect, useState } from 'react';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { X } from 'lucide-react';
 import { Shift } from '../../lib/types';
 import { getShiftType, hasShiftTimes } from '../../lib/shifts';
 import { durationMinutes } from '../../lib/time';
 
+interface JTDaySummary {
+  date: string;
+  hoursWorked: number;
+}
+
 interface JTPeriodResult {
   totalDaysWithJT: number;
   totalHoursJT: number;
+  daySummaries: JTDaySummary[];
 }
 
 interface JTCounterModalProps {
@@ -21,6 +29,24 @@ function getTodayISO(): string {
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+function formatDisplayDate(value: string): string {
+  if (!value) {
+    return '';
+  }
+
+  const [year, month, day] = value.split('-');
+  return `${day}/${month}/${year}`;
+}
+
+function formatHours(value: number): string {
+  return value.toFixed(1);
+}
+
+function buildPdfFileName(fromDate: string, toDate: string): string {
+  const fromSegment = fromDate ? ` desde ${fromDate}` : '';
+  return `Nº de días turno JT en periodo${fromSegment} hasta ${toDate}.pdf`;
 }
 
 export const JTCounterModal = ({ isOpen, onClose, shifts }: JTCounterModalProps) => {
@@ -71,18 +97,73 @@ export const JTCounterModal = ({ isOpen, onClose, shifts }: JTCounterModalProps)
       return true;
     });
 
-    const totalDaysWithJT = new Set(periodShifts.map((shift) => shift.date)).size;
-    const totalHoursJT = periodShifts.reduce((hours, shift) => {
-      if (!hasShiftTimes(shift)) {
-        return hours;
-      }
+    const hoursByDate = new Map<string, number>();
 
-      return hours + (durationMinutes(shift.startTime, shift.endTime) / 60);
-    }, 0);
+    for (const shift of periodShifts) {
+      const shiftHours = hasShiftTimes(shift)
+        ? durationMinutes(shift.startTime, shift.endTime) / 60
+        : 0;
 
-    setResult({ totalDaysWithJT, totalHoursJT });
+      hoursByDate.set(shift.date, (hoursByDate.get(shift.date) ?? 0) + shiftHours);
+    }
+
+    const daySummaries = Array.from(hoursByDate.entries())
+      .map(([date, hoursWorked]) => ({ date, hoursWorked }))
+      .sort((left, right) => right.date.localeCompare(left.date));
+
+    const totalDaysWithJT = daySummaries.length;
+    const totalHoursJT = daySummaries.reduce((hours, daySummary) => hours + daySummary.hoursWorked, 0);
+
+    setResult({ totalDaysWithJT, totalHoursJT, daySummaries });
     setHasCalculated(true);
   };
+
+  const handlePrint = () => {
+    if (!result || result.totalDaysWithJT <= 0) {
+      return;
+    }
+
+    const document = new jsPDF();
+    const periodLabel = fromDate
+      ? `Periodo desde ${formatDisplayDate(fromDate)} hasta ${formatDisplayDate(toDate)}`
+      : `Periodo hasta ${formatDisplayDate(toDate)}`;
+
+    document.setFontSize(16);
+    document.text('Nº de días turno JT en periodo', 14, 18);
+    document.setFontSize(11);
+    document.text(periodLabel, 14, 26);
+
+    autoTable(document, {
+      startY: 34,
+      head: [['Nº días', 'Fecha turno JT', 'Nº horas realizadas']],
+      body: result.daySummaries.map((daySummary, index) => [
+        String(index + 1),
+        formatDisplayDate(daySummary.date),
+        formatHours(daySummary.hoursWorked),
+      ]),
+      foot: [[
+        `Total: ${result.totalDaysWithJT}`,
+        '',
+        `Total: ${formatHours(result.totalHoursJT)}`,
+      ]],
+      theme: 'grid',
+      headStyles: {
+        fillColor: [27, 37, 82],
+      },
+      footStyles: {
+        fillColor: [230, 184, 0],
+        textColor: [23, 23, 23],
+        fontStyle: 'bold',
+      },
+      styles: {
+        fontSize: 10,
+      },
+    });
+
+    document.save(buildPdfFileName(fromDate, toDate));
+  };
+
+  const canPrint = Boolean(result && hasCalculated && result.totalDaysWithJT > 0);
 
   if (!isOpen) {
     return null;
@@ -94,6 +175,14 @@ export const JTCounterModal = ({ isOpen, onClose, shifts }: JTCounterModalProps)
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '14px' }}>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '800', margin: 0 }}>Contador turnos JT</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+            <button
+              className="btn-outline modal-reset-button"
+              onClick={handlePrint}
+              disabled={!canPrint}
+              style={{ padding: '8px 12px', fontWeight: 700 }}
+            >
+              Imprimir
+            </button>
             <button
               className="btn-outline modal-reset-button"
               onClick={resetState}
@@ -163,7 +252,7 @@ export const JTCounterModal = ({ isOpen, onClose, shifts }: JTCounterModalProps)
                 <input
                   className="modal-input"
                   type="text"
-                  value={result ? result.totalHoursJT.toFixed(1) : ''}
+                  value={result ? formatHours(result.totalHoursJT) : ''}
                   readOnly
                   placeholder="Pendiente de cálculo"
                   style={{ fontWeight: 700, fontSize: '0.95rem' }}
