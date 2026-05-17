@@ -881,6 +881,7 @@ button:hover {
   min-height: 40px;
   white-space: nowrap;
   box-shadow: 0 12px 26px rgba(164, 122, 0, 0.2);
+  text-decoration: none;
 }
 
 .btn-outline {
