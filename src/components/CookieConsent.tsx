@@ -35,7 +35,6 @@ export function CookieConsent() {
   }
   return (
     <>
-      <button type="button" aria-label="Preferencias de cookies" onClick={() => { setOpen(true); setSettings(true); }} style={{ position: 'fixed', left: 20, bottom: 20, zIndex: 80, width: 44, height: 44, borderRadius: 999, border: '1px solid var(--glass-border)', background: 'var(--panel-bg)', color: 'var(--text-primary)', boxShadow: 'var(--shadow-lg)' }}>C</button>
       {open ? (
         <div role="dialog" aria-modal="true" aria-labelledby="groundsync-cookie-title" className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: 520 }}>
