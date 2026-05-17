@@ -1,0 +1,65 @@
+import { useEffect, useState } from 'react';
+
+type CookiePreferences = { necessary: true; analytics: boolean; marketing: boolean; updatedAt: string; version: 'v1' };
+const STORAGE_KEY = 'anclora-cookie-consent-v1';
+const defaults: CookiePreferences = { necessary: true, analytics: false, marketing: false, updatedAt: '', version: 'v1' };
+
+export function CookieConsent() {
+  const [open, setOpen] = useState(false);
+  const [settings, setSettings] = useState(false);
+  const [preferences, setPreferences] = useState(defaults);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<CookiePreferences>;
+        setPreferences({ necessary: true, analytics: Boolean(parsed.analytics), marketing: Boolean(parsed.marketing), updatedAt: parsed.updatedAt ?? '', version: 'v1' });
+        return;
+      }
+    } catch {
+      // Ignore malformed persisted preferences and show the modal again.
+    }
+    setOpen(true);
+  }, []);
+  useEffect(() => {
+    const listener = () => { setOpen(true); setSettings(true); };
+    window.addEventListener('anclora:open-cookie-preferences', listener);
+    return () => window.removeEventListener('anclora:open-cookie-preferences', listener);
+  }, []);
+  function persist(next: CookiePreferences) {
+    const value = { ...next, necessary: true as const, updatedAt: new Date().toISOString(), version: 'v1' as const };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+    setPreferences(value);
+    setOpen(false);
+    setSettings(false);
+  }
+  return (
+    <>
+      <button type="button" aria-label="Preferencias de cookies" onClick={() => { setOpen(true); setSettings(true); }} style={{ position: 'fixed', left: 20, bottom: 20, zIndex: 80, width: 44, height: 44, borderRadius: 999, border: '1px solid var(--glass-border)', background: 'var(--panel-bg)', color: 'var(--text-primary)', boxShadow: 'var(--shadow-lg)' }}>C</button>
+      {open ? (
+        <div role="dialog" aria-modal="true" aria-labelledby="groundsync-cookie-title" className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: 520 }}>
+            <h3 id="groundsync-cookie-title" style={{ margin: 0 }}>{settings ? 'Gestionar cookies' : 'Preferencias de cookies'}</h3>
+            <p style={{ color: 'var(--text-muted)', lineHeight: 1.5 }}>Esta app utiliza cookies necesarias para operación local y puede guardar preferencias opcionales de análisis o marketing si las autorizas.</p>
+            {settings ? (
+              <div style={{ display: 'grid', gap: 10 }}>
+                <CookieRow title="Cookies necesarias" description="Operación básica y preferencias. No se pueden desactivar." checked disabled onChange={() => {}} />
+                <CookieRow title="Cookies de análisis" description="Medición funcional de uso interno." checked={preferences.analytics} onChange={(analytics) => setPreferences((current) => ({ ...current, analytics }))} />
+                <CookieRow title="Cookies de marketing" description="Reservadas para comunicaciones relevantes. No activan scripts inexistentes." checked={preferences.marketing} onChange={(marketing) => setPreferences((current) => ({ ...current, marketing }))} />
+              </div>
+            ) : null}
+            <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
+              {!settings ? <button className="btn-gold" type="button" onClick={() => persist({ ...defaults, analytics: true, marketing: true })}>Aceptar todas</button> : null}
+              <button className="btn-outline" type="button" onClick={() => settings ? persist(preferences) : setSettings(true)}>{settings ? 'Guardar preferencias' : 'Configuración'}</button>
+              <button className="btn-outline" type="button" onClick={() => persist(defaults)}>Rechazar opcionales</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+function CookieRow({ title, description, checked, disabled, onChange }: { title: string; description: string; checked: boolean; disabled?: boolean; onChange: (checked: boolean) => void }) {
+  return <label style={{ display: 'flex', justifyContent: 'space-between', gap: 12, border: '1px solid var(--glass-border)', borderRadius: 12, padding: 12 }}><span><strong>{title}</strong><small style={{ display: 'block', color: 'var(--text-muted)', marginTop: 4 }}>{description}</small></span><input type="checkbox" checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} /></label>;
+}

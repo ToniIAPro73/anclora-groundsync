@@ -9,6 +9,9 @@ import { MonthGrid } from './components/shift-dashboard/MonthGrid';
 import { ShiftModal } from './components/shift-dashboard/ShiftModal';
 import { ImportModal } from './components/shift-dashboard/ImportModal';
 import { JTCounterModal } from './components/shift-dashboard/JTCounterModal';
+import { CookieConsent } from './components/CookieConsent';
+import { LegalFooter } from './components/LegalFooter';
+import { LegalPage } from './components/LegalPage';
 import { CalendarImportContext } from './lib/import-types';
 
 type ThemeMode = 'system' | 'light' | 'dark';
@@ -146,6 +149,7 @@ function describeShift(shift: Shift): string {
   return `${origin} ${type} ${shift.startTime}-${shift.endTime} en ${shift.date}`;
 }
 function App() {
+  const legalPath = typeof window !== 'undefined' ? window.location.pathname.replace(/^\/+/, '') : '';
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     if (typeof window === 'undefined') {
@@ -345,6 +349,15 @@ function App() {
     }
   };
 
+  if (legalPath === 'privacy' || legalPath === 'terms' || legalPath === 'legal') {
+    return (
+      <>
+        <LegalPage kind={legalPath} />
+        <CookieConsent />
+      </>
+    );
+  }
+
   return (
     <div className="container">
       <MonthHeader
@@ -458,6 +471,8 @@ function App() {
           </div>
         </div>
       )}
+      <LegalFooter />
+      <CookieConsent />
     </div>
   );
 }
