@@ -7,7 +7,7 @@ export const normalizeShiftTypeLabel = (value: string): string => {
   const normalized = value.trim().toLowerCase();
   if (!normalized) return '';
   if (normalized === 'jt') return 'JT';
-  if (normalized === 'libre') return 'Libre';
+  if (normalized === 'libre' || normalized === 'dl' || normalized === 'aj') return 'Libre';
   if (normalized === 'extras') return 'Extras';
   if (normalized === 'vacaciones' || normalized === 'vac.' || normalized === 'vac') return 'Vacaciones';
   if (normalized === 'regular') return 'Regular';

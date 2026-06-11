@@ -67,7 +67,8 @@ function isTimeToken(value: string): boolean {
 }
 
 function isOffToken(value: string): boolean {
-  return normalizeText(value) === 'off';
+  const normalized = normalizeText(value);
+  return normalized === 'off' || normalized === 'dl' || normalized === 'aj';
 }
 
 function isSeparatorToken(value: string): boolean {
