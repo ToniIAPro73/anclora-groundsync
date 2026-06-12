@@ -261,7 +261,7 @@ function getDayColumnsForPageTypeB(items: PdfTextItem[], page: number) {
 function findEmployeeRowItemsTypeB(
   items: PdfTextItem[],
   selector: EmployeeSelector,
-): { rowItems: PdfTextItem[]; page: number } {
+): { rowItems: PdfTextItem[]; page: number; category: string } {
   const targetId = normalizeEmployeeId(selector.employeeId);
 
   const pages = Array.from(new Set(items.map((item) => item.page))).sort((left, right) => left - right);
@@ -274,22 +274,43 @@ function findEmployeeRowItemsTypeB(
     if (idIndex >= 0) {
       const marker = pageItems[idIndex];
 
-      // Find next employee or end of data area to bound the row height
+      // Find category before the employee row
+      let category = 'Regular';
+      for (let i = idIndex - 1; i >= 0; i -= 1) {
+        const text = normalizeText(pageItems[i].text);
+        if (text.includes('jtu')) {
+          category = 'Jefe de Turno';
+          break;
+        }
+        if (text.includes('supervisor') || text.includes('sup aea')) {
+          category = 'Regular';
+          break;
+        }
+      }
+
+      // Find next employee or end of data area to bound the row height strictly
       let nextMarkerY = -1000; // Bottom of page
       for (let i = idIndex + 1; i < pageItems.length; i += 1) {
         const item = pageItems[i];
+        // Next ID usually starts at x < 100 and is a number
         if (item.x < 100 && /^\d{4,6}$/.test(normalizeEmployeeId(item.text))) {
+          nextMarkerY = item.y + 2;
+          break;
+        }
+        // If we see a header, it's also a boundary
+        const text = normalizeText(item.text);
+        if (text.includes('supervisor') || text.includes('sup aea')) {
           nextMarkerY = item.y + 2;
           break;
         }
       }
 
       const rowItems = pageItems.filter(
-        (item) => item.x > 200 && item.y <= marker.y + 5 && item.y >= nextMarkerY,
+        (item) => item.x > 150 && item.y <= marker.y + 5 && item.y >= nextMarkerY,
       );
 
       if (rowItems.length > 0) {
-        return { rowItems, page };
+        return { rowItems, page, category };
       }
     }
   }
@@ -302,7 +323,7 @@ function parseTypeBPdfItems(
   context: CalendarImportContext,
   selector: EmployeeSelector,
 ): ParsedCalendarShift[] {
-  const { rowItems, page } = findEmployeeRowItemsTypeB(allItems, selector);
+  const { rowItems, page, category } = findEmployeeRowItemsTypeB(allItems, selector);
   const columnGroups = clusterByX(rowItems);
   const dayColumns = getDayColumnsForPageTypeB(allItems, page);
 
@@ -320,7 +341,7 @@ function parseTypeBPdfItems(
       .map((item) => item.text.trim())
       .filter(Boolean);
 
-    shifts.push(...buildShiftEntriesForDay(date, tokens));
+    shifts.push(...buildShiftEntriesForDay(date, tokens, category));
   }
 
   return shifts;
@@ -478,7 +499,7 @@ function mapColumnGroupsToDays(
   return mapped;
 }
 
-function buildShiftEntriesForDay(date: string, tokens: string[]): ParsedCalendarShift[] {
+function buildShiftEntriesForDay(date: string, tokens: string[], defaultShiftType = 'Regular'): ParsedCalendarShift[] {
   const meaningful = tokens.flatMap((token) => expandShiftTokens(token)).map((token) => token.trim()).filter(Boolean);
   if (meaningful.length === 0) {
     return [];
@@ -548,9 +569,9 @@ function buildShiftEntriesForDay(date: string, tokens: string[]): ParsedCalendar
         isValid: startTime !== '??:??' && endTime !== '??:??',
         confidence: 0.9,
         rawText: segment.join(' '),
-        shiftType: 'Regular',
+        shiftType: defaultShiftType,
         notes: null,
-        color: 'blue',
+        color: defaultShiftType === 'Jefe de Turno' ? 'purple' : 'blue',
       });
     }
   }
