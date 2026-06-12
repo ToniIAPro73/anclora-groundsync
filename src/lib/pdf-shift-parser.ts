@@ -195,12 +195,136 @@ function detectPdfDocumentTypeFromItems(items: PdfTextItem[]): PdfDocumentType {
   if (hasDayHeaders && hasEmployeeIds) {
     return 'TYPE_A';
   }
+
+  const hasWeekHeaders = items.some((item) => /^[LMXJVSD]\d{2}$/.test(item.text));
+  const hasNominaHeader = items.some((item) => normalizeText(item.text).includes('nomina'));
+  if (hasWeekHeaders && hasNominaHeader) {
+    return 'TYPE_B';
+  }
+
   return 'UNKNOWN';
 }
 
 export async function detectPdfDocumentType(file: File): Promise<PdfDocumentType> {
   const items = await extractPdfTextItems(file);
   return detectPdfDocumentTypeFromItems(items);
+}
+
+function detectTypeBCalendarContext(items: PdfTextItem[]): CalendarImportContext {
+  const year = deduceYearFromItems(items);
+  const monthNames = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+  ];
+  const monthShortNames = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+  for (const item of items) {
+    const normalized = normalizeText(item.text);
+    for (let i = 0; i < 12; i += 1) {
+      if (normalized === monthNames[i] || normalized === monthShortNames[i]) {
+        return { month: i, year };
+      }
+    }
+  }
+
+  for (const item of items) {
+    const normalized = normalizeText(item.text);
+    for (let i = 0; i < 12; i += 1) {
+      if (normalized.includes(monthNames[i])) {
+        return { month: i, year };
+      }
+    }
+  }
+
+  return {
+    month: new Date().getMonth(),
+    year,
+  };
+}
+
+function getDayColumnsForPageTypeB(items: PdfTextItem[], page: number) {
+  return items
+    .filter((item) => item.page === page)
+    .map((item) => {
+      const match = item.text.match(/^[LMXJVSD](\d{2})$/);
+      if (!match) {
+        return null;
+      }
+
+      const day = Number.parseInt(match[1], 10);
+      return { day, x: item.x };
+    })
+    .filter((item): item is { day: number; x: number } => Boolean(item))
+    .sort((left, right) => left.x - right.x);
+}
+
+function findEmployeeRowItemsTypeB(
+  items: PdfTextItem[],
+  selector: EmployeeSelector,
+): { rowItems: PdfTextItem[]; page: number } {
+  const targetId = normalizeEmployeeId(selector.employeeId);
+  const normalizedName = normalizeText(selector.employeeName);
+
+  const pages = Array.from(new Set(items.map((item) => item.page))).sort((left, right) => left - right);
+  for (const page of pages) {
+    const pageItems = sortPdfItemsForReading(items.filter((item) => item.page === page));
+
+    // In TYPE_B, the ID is often a plain number at the start of the row.
+    const idIndex = pageItems.findIndex((item) => normalizeEmployeeId(item.text) === targetId && item.x < 100);
+
+    if (idIndex >= 0) {
+      const marker = pageItems[idIndex];
+
+      // Find next employee or end of data area to bound the row height
+      let nextMarkerY = -1000; // Bottom of page
+      for (let i = idIndex + 1; i < pageItems.length; i += 1) {
+        const item = pageItems[i];
+        if (item.x < 100 && /^\d{4,6}$/.test(normalizeEmployeeId(item.text))) {
+          nextMarkerY = item.y + 2;
+          break;
+        }
+      }
+
+      const rowItems = pageItems.filter(
+        (item) => item.x > 200 && item.y <= marker.y + 5 && item.y >= nextMarkerY,
+      );
+
+      if (rowItems.length > 0) {
+        return { rowItems, page };
+      }
+    }
+  }
+
+  throw new Error(`No se encontró la fila de ${selector.employeeName} (${selector.employeeId}) en el PDF.`);
+}
+
+function parseTypeBPdfItems(
+  allItems: PdfTextItem[],
+  context: CalendarImportContext,
+  selector: EmployeeSelector,
+): ParsedCalendarShift[] {
+  const { rowItems, page } = findEmployeeRowItemsTypeB(allItems, selector);
+  const columnGroups = clusterByX(rowItems);
+  const dayColumns = getDayColumnsForPageTypeB(allItems, page);
+
+  if (dayColumns.length === 0) {
+    throw new Error('No se pudieron detectar los encabezados de días en la página del PDF (Tipo B).');
+  }
+
+  const mappedColumns = mapColumnGroupsToDays(columnGroups, dayColumns);
+  const shifts: ParsedCalendarShift[] = [];
+
+  for (const { day, items } of mappedColumns) {
+    const date = `${context.year}-${String(context.month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const tokens = items
+      .sort((left, right) => right.y - left.y || left.x - right.x)
+      .map((item) => item.text.trim())
+      .filter(Boolean);
+
+    shifts.push(...buildShiftEntriesForDay(date, tokens));
+  }
+
+  return shifts;
 }
 
 function findEmployeeRowItemsTypeA(
@@ -489,6 +613,8 @@ export async function detectPdfCalendarContext(file: File): Promise<CalendarImpo
   switch (documentType) {
     case 'TYPE_A':
       return detectTypeACalendarContext(items);
+    case 'TYPE_B':
+      return detectTypeBCalendarContext(items);
     default:
       return {
         month: new Date().getMonth(),
@@ -509,7 +635,7 @@ export async function parseEmployeeShiftsFromPdf(
     case 'TYPE_A':
       return parseTypeAPdfItems(allItems, context, selector);
     case 'TYPE_B':
-      throw new Error('El procesamiento para PDFs de tipo B todavia no esta implementado.');
+      return parseTypeBPdfItems(allItems, context, selector);
     default:
       throw new Error('No se ha podido identificar el formato del PDF para procesarlo correctamente.');
   }
