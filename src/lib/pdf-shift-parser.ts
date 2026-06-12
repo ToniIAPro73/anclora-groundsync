@@ -323,7 +323,7 @@ function parseTypeBPdfItems(
   context: CalendarImportContext,
   selector: EmployeeSelector,
 ): ParsedCalendarShift[] {
-  const { rowItems, page, category } = findEmployeeRowItemsTypeB(allItems, selector);
+  const { rowItems, page } = findEmployeeRowItemsTypeB(allItems, selector);
   const columnGroups = clusterByX(rowItems);
   const dayColumns = getDayColumnsForPageTypeB(allItems, page);
 
@@ -341,7 +341,7 @@ function parseTypeBPdfItems(
       .map((item) => item.text.trim())
       .filter(Boolean);
 
-    shifts.push(...buildShiftEntriesForDay(date, tokens, category));
+    shifts.push(...buildShiftEntriesForDay(date, tokens));
   }
 
   return shifts;
@@ -499,20 +499,21 @@ function mapColumnGroupsToDays(
   return mapped;
 }
 
-function buildShiftEntriesForDay(date: string, tokens: string[], defaultShiftType = 'Regular'): ParsedCalendarShift[] {
+function buildShiftEntriesForDay(date: string, tokens: string[]): ParsedCalendarShift[] {
   const meaningful = tokens.flatMap((token) => expandShiftTokens(token)).map((token) => token.trim()).filter(Boolean);
   if (meaningful.length === 0) {
     return [];
   }
 
+  // Strictly map AJ and DL to Libre with NO times
   if (meaningful.every(isOffToken)) {
     return [{
       date,
-      startTime: '??:??',
-      endTime: '??:??',
+      startTime: '',
+      endTime: '',
       origin: 'PDF',
       isValid: true,
-      confidence: 0.95,
+      confidence: 1.0,
       rawText: meaningful.join(' '),
       shiftType: 'Libre',
       notes: null,
@@ -544,11 +545,11 @@ function buildShiftEntriesForDay(date: string, tokens: string[], defaultShiftTyp
     if (segment.every(isOffToken)) {
       shifts.push({
         date,
-        startTime: '??:??',
-        endTime: '??:??',
+        startTime: '',
+        endTime: '',
         origin: 'PDF',
         isValid: true,
-        confidence: 0.95,
+        confidence: 1.0,
         rawText: segment.join(' '),
         shiftType: 'Libre',
         notes: null,
@@ -569,7 +570,7 @@ function buildShiftEntriesForDay(date: string, tokens: string[], defaultShiftTyp
         isValid: startTime !== '??:??' && endTime !== '??:??',
         confidence: 0.9,
         rawText: segment.join(' '),
-        shiftType: defaultShiftType,
+        shiftType: 'Regular', // Always Regular for work shifts
         notes: null,
         color: 'blue',
       });
