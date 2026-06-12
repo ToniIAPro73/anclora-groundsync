@@ -306,7 +306,7 @@ function findEmployeeRowItemsTypeB(
       }
 
       const rowItems = pageItems.filter(
-        (item) => item.x > 150 && item.y <= marker.y + 5 && item.y >= nextMarkerY,
+        (item) => item.x > 150 && item.y <= marker.y + 25 && item.y >= nextMarkerY,
       );
 
       if (rowItems.length > 0) {
@@ -571,7 +571,7 @@ function buildShiftEntriesForDay(date: string, tokens: string[], defaultShiftTyp
         rawText: segment.join(' '),
         shiftType: defaultShiftType,
         notes: null,
-        color: defaultShiftType === 'Jefe de Turno' ? 'purple' : 'blue',
+        color: 'blue',
       });
     }
   }
