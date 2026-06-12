@@ -306,7 +306,7 @@ function findEmployeeRowItemsTypeB(
       }
 
       const rowItems = pageItems.filter(
-        (item) => item.x > 150 && item.y <= marker.y + 25 && item.y >= nextMarkerY,
+        (item) => item.x > 150 && item.y <= marker.y + 12 && item.y >= nextMarkerY,
       );
 
       if (rowItems.length > 0) {
