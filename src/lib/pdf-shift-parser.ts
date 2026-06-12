@@ -263,7 +263,6 @@ function findEmployeeRowItemsTypeB(
   selector: EmployeeSelector,
 ): { rowItems: PdfTextItem[]; page: number } {
   const targetId = normalizeEmployeeId(selector.employeeId);
-  const normalizedName = normalizeText(selector.employeeName);
 
   const pages = Array.from(new Set(items.map((item) => item.page))).sort((left, right) => left - right);
   for (const page of pages) {
