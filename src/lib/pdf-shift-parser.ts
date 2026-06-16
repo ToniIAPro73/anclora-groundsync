@@ -196,7 +196,7 @@ function detectPdfDocumentTypeFromItems(items: PdfTextItem[]): PdfDocumentType {
     return 'TYPE_A';
   }
 
-  const hasWeekHeaders = items.some((item) => /^[LMXJVSD]\d{2}$/.test(item.text));
+  const hasWeekHeaders = items.some((item) => /^[LMXJVSD]\d{1,2}$/.test(item.text));
   const hasNominaHeader = items.some((item) => normalizeText(item.text).includes('nomina'));
   if (hasWeekHeaders && hasNominaHeader) {
     return 'TYPE_B';
@@ -246,7 +246,7 @@ function getDayColumnsForPageTypeB(items: PdfTextItem[], page: number) {
   return items
     .filter((item) => item.page === page)
     .map((item) => {
-      const match = item.text.match(/^[LMXJVSD](\d{2})$/);
+      const match = item.text.match(/^[LMXJVSD](\d{1,2})$/);
       if (!match) {
         return null;
       }
