@@ -16,7 +16,7 @@ Aplicación operativa interna, gobernada como producto independiente, para plani
 
 ![Anclora](https://img.shields.io/badge/Anclora-ecosystem-111827)
 ![Categoría](https://img.shields.io/badge/categoría-Premium-C07860)
-![Idiomas](https://img.shields.io/badge/idiomas-ES%20%7C%20EN-047857)
+![Idiomas](https://img.shields.io/badge/idioma%20producto-ES-047857)
 
 </div>
 
@@ -64,8 +64,7 @@ npm run dev
 
 ## Idiomas soportados
 
-- Español (predeterminado)
-- English
+El producto opera únicamente en español (`lang="es"`, sin selector de idioma). Esta documentación se ofrece también en inglés como cortesía para lectores no hispanohablantes.
 
 ## Documentación y gobernanza
 

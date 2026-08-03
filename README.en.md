@@ -16,7 +16,7 @@ Internal operational application, governed as an independent product, for shift 
 
 ![Anclora](https://img.shields.io/badge/Anclora-ecosystem-111827)
 ![Category](https://img.shields.io/badge/category-Premium-C07860)
-![Languages](https://img.shields.io/badge/languages-ES%20%7C%20EN-047857)
+![Languages](https://img.shields.io/badge/product%20language-ES-047857)
 
 </div>
 
@@ -64,8 +64,7 @@ npm run dev
 
 ## Supported languages
 
-- Español (default)
-- English
+The product operates in Spanish only (`lang="es"`, no language switcher). This documentation is also offered in English as a courtesy for non-Spanish-speaking readers.
 
 ## Documentation and governance
 
