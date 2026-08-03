@@ -2,81 +2,82 @@
 
 <div align="center">
 
-<img src="./public/brand/logo-anclora-groundsync.png" alt="Anclora Groundsync" width="120" />
+<img src="./public/brand/anclora-groundsync.png" alt="Anclora GroundSync" width="132" />
 
-# Anclora Groundsync
+# Anclora GroundSync
 
-### Producto del ecosistema Anclora documentado como repositorio publico de familia independent_product
+### Gestión y sincronización de turnos de trabajo
+
+Aplicación operativa interna, gobernada como producto independiente, para planificar turnos, importar datos desde Excel y generar informes.
 
 **Español** · [English](./README.en.md)
 
 <br />
 
 ![Anclora](https://img.shields.io/badge/Anclora-ecosystem-111827)
-![Documentation](https://img.shields.io/badge/documentation-premium-BFA46A)
-![Languages](https://img.shields.io/badge/languages-ES%20%7C%20EN-047857)
+![Categoría](https://img.shields.io/badge/categoría-Premium-C07860)
+![Idiomas](https://img.shields.io/badge/idiomas-ES%20%7C%20EN-047857)
 
 </div>
 
 ---
 
 > [!IMPORTANT]
-> Repositorio publico reducido. Describe el producto y su arquitectura conceptual; no expone logica operativa, secretos ni datos reales.
+> Repositorio interno del ecosistema Anclora. No publicar detalles operativos, credenciales ni lógica sensible fuera de canales autorizados.
 
-## Vista rapida
+## Qué es
 
-| Problema | Respuesta de producto |
-| --- | --- |
-| Contexto disperso | Experiencia guiada y trazable |
-| Datos sensibles | Privacidad por diseno y minimizacion |
-| Decision compleja | Flujo conceptual claro y revisable |
-| Operacion profesional | Arquitectura modular y controles de calidad |
+Anclora GroundSync es una herramienta operativa interna de planificación y sincronización de turnos de trabajo. Aunque es de uso interno, se gobierna en el ecosistema de marca como producto independiente, comparable a `anclora-impulso`.
 
-## Flujo conceptual
+## Categoría en el ecosistema
 
-```text
-Entrada de usuario / evidencia
-        ↓
-Validacion y normalizacion
-        ↓
-Flujo de producto
-        ↓
-Revision o resultado explicable
-        ↓
-Salida profesional / siguiente accion
+| Campo | Valor |
+|---|---|
+| Categoría | Premium |
+| Acento de marca | `#6AAD49` |
+| Repositorio canónico | `anclora-groundsync` |
+
+## Funcionalidades principales
+
+- Panel mensual de turnos con navegación por mes
+- Importación de turnos desde Excel (ExcelJS)
+- Extracción de datos por OCR (Tesseract.js)
+- Generación de informes en PDF (jsPDF)
+- Base de datos serverless (Neon)
+
+## Stack tecnológico
+
+| Área | Tecnología |
+|---|---|
+| Frontend | React, Vite |
+| Backend | Express |
+| Base de datos | Neon (PostgreSQL serverless) |
+| Datos | ExcelJS, PDF.js, Tesseract.js |
+| PDF | jsPDF |
+
+## Arranque local
+
+```bash
+npm install
+npm run dev
 ```
 
-## Que muestra este repositorio
+## Idiomas soportados
 
-Producto del ecosistema Anclora documentado como repositorio publico de familia independent_product.
+- Español (predeterminado)
+- English
 
-El README presenta el alcance publico del producto, su posicionamiento dentro del ecosistema
-Anclora y los limites de exposicion adecuados para un repositorio abierto.
+## Documentación y gobernanza
 
-## Tecnologia
-
-| Area | Detalle |
-| --- | --- |
-| React | Presente en el repositorio |
-| TypeScript | Presente en el repositorio |
-
-## Documentacion
-
-- [Documentacion](./docs)
-
-## Marca
-
-- Producto canonico: `anclora-groundsync`
-- Familia: `independent_product`
-- Visibilidad objetivo: `public`
-- Asset de marca: `presente`
+- Contratos de marca y gobernanza: [`docs/standards/`](./docs/standards/)
+- Bóveda Anclora (fuente de verdad): `contracts/` y `docs/governance/`
 
 ---
 
 <div align="center">
 
-### Antonio Ballesteros · Anclora Group
+### Anclora Group
 
-Software, IA generativa y automatizacion para productos digitales trazables.
+Uso interno.
 
 </div>

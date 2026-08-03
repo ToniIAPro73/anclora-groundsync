@@ -2,18 +2,20 @@
 
 <div align="center">
 
-<img src="./public/brand/logo-anclora-groundsync.png" alt="Anclora Groundsync" width="120" />
+<img src="./public/brand/anclora-groundsync.png" alt="Anclora GroundSync" width="132" />
 
-# Anclora Groundsync
+# Anclora GroundSync
 
-### Producto del ecosistema Anclora documentado como repositorio publico de familia independent_product
+### Work-shift management and synchronization
+
+Internal operational application, governed as an independent product, for shift planning, Excel data import, and report generation.
 
 [Español](./README.md) · **English**
 
 <br />
 
 ![Anclora](https://img.shields.io/badge/Anclora-ecosystem-111827)
-![Documentation](https://img.shields.io/badge/documentation-premium-BFA46A)
+![Category](https://img.shields.io/badge/category-Premium-C07860)
 ![Languages](https://img.shields.io/badge/languages-ES%20%7C%20EN-047857)
 
 </div>
@@ -21,62 +23,61 @@
 ---
 
 > [!IMPORTANT]
-> Reduced public repository. It describes the product and conceptual architecture; it does not expose operational logic, secrets or real data.
+> Internal Anclora ecosystem repository. Do not publish operational details, credentials, or sensitive logic outside authorized channels.
 
-## At a glance
+## What it is
 
-| Product challenge | Product response |
-| --- | --- |
-| Fragmented context | Guided and traceable experience |
-| Sensitive data | Privacy by design and minimisation |
-| Complex decision | Clear and reviewable conceptual flow |
-| Professional operation | Modular architecture and quality controls |
+Anclora GroundSync is an internal operational tool for work-shift planning and synchronization. Although used internally, it is governed in the brand ecosystem as an independent product, comparable to `anclora-impulso`.
 
-## Conceptual workflow
+## Category in the ecosystem
 
-```text
-User input / evidence
-        ↓
-Validation and normalisation
-        ↓
-Product workflow
-        ↓
-Review or explainable result
-        ↓
-Professional output / next action
+| Field | Value |
+|---|---|
+| Category | Premium |
+| Brand accent | `#6AAD49` |
+| Canonical repository | `anclora-groundsync` |
+
+## Key features
+
+- Monthly shift dashboard with month navigation
+- Shift import from Excel (ExcelJS)
+- OCR data extraction (Tesseract.js)
+- PDF report generation (jsPDF)
+- Serverless database (Neon)
+
+## Technology stack
+
+| Area | Technology |
+|---|---|
+| Frontend | React, Vite |
+| Backend | Express |
+| Database | Neon (serverless PostgreSQL) |
+| Data | ExcelJS, PDF.js, Tesseract.js |
+| PDF | jsPDF |
+
+## Local setup
+
+```bash
+npm install
+npm run dev
 ```
 
-## What this repository shows
+## Supported languages
 
-Producto del ecosistema Anclora documentado como repositorio publico de familia independent_product.
+- Español (default)
+- English
 
-This README documents the public scope of the product, its position in the Anclora ecosystem
-and the right exposure limits for an open repository.
+## Documentation and governance
 
-## Technology
-
-| Area | Detail |
-| --- | --- |
-| React | Present in repository |
-| TypeScript | Present in repository |
-
-## Documentation
-
-- [Documentacion](./docs)
-
-## Brand
-
-- Canonical product: `anclora-groundsync`
-- Family: `independent_product`
-- Target visibility: `public`
-- Brand asset: `present`
+- Brand and governance contracts: [`docs/standards/`](./docs/standards/)
+- Anclora Vault (source of truth): `contracts/` and `docs/governance/`
 
 ---
 
 <div align="center">
 
-### Antonio Ballesteros · Anclora Group
+### Anclora Group
 
-Software, generative AI and automation for traceable digital products.
+Internal use.
 
 </div>
