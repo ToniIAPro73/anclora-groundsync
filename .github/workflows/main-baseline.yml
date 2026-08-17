@@ -1,0 +1,27 @@
+name: Verify / Main Baseline
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: main-baseline
+  cancel-in-progress: false
+
+jobs:
+  integrity:
+    name: Lightweight dependency integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Dependency graph installs cleanly
+        run: npm ci
