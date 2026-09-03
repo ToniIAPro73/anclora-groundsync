@@ -1090,9 +1090,9 @@ button:hover {
   }
 
   .month-day-add-button {
-    width: 22px;
-    height: 22px;
-    flex-basis: 22px;
+    width: 24px;
+    height: 24px;
+    flex-basis: 24px;
   }
 }
 
@@ -1192,9 +1192,9 @@ button:hover {
   }
 
   .month-day-add-button {
-    width: 21px;
-    height: 21px;
-    flex-basis: 21px;
+    width: 24px;
+    height: 24px;
+    flex-basis: 24px;
   }
 }
 
