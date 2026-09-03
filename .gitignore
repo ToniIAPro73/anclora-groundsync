@@ -34,3 +34,6 @@ dist-ssr
 .next/
 out/
 build/
+
+# Scratch/local-only files (real schedules, test PDFs — never commit PII)
+tmp/
