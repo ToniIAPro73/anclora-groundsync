@@ -258,18 +258,41 @@ function getDayColumnsForPageTypeB(items: PdfTextItem[], page: number) {
     .sort((left, right) => left.x - right.x);
 }
 
+// Marker column bound for TYPE_B id detection. Some export variants of
+// this report widen the id column (observed: plain-number ids at
+// x~107-112, vs. the narrower x~28 layout) -- 120 stays well short of the
+// 150 data-zone bound below so it can't swallow row data. A fixed 100
+// caused "No se encontro la fila de (ID) en el PDF" on the wider layout.
+const TYPE_B_MARKER_MAX_X = 120;
+
+/** True when the item text prefix-matches at least 2 of the target
+ * employee's own name tokens (mirrors the row-marker's own line, never a
+ * neighbour). Guards the data-zone filter below: the same wider layout
+ * that pushes the id column right also pushes the employee's own name
+ * past the old 150 cutoff, so without this the name leaks into rowItems
+ * and gets misread as an unknown shift token. */
+function matchesEmployeeNameTokens(text: string, nameTokens: string[]): boolean {
+  if (nameTokens.length === 0) {
+    return false;
+  }
+  const words = normalizeText(text).split(' ');
+  const matching = nameTokens.filter((token) => words.some((word) => word.startsWith(token) || token.startsWith(word)));
+  return matching.length >= Math.min(2, nameTokens.length);
+}
+
 function findEmployeeRowItemsTypeB(
   items: PdfTextItem[],
   selector: EmployeeSelector,
 ): { rowItems: PdfTextItem[]; page: number; category: string } {
   const targetId = normalizeEmployeeId(selector.employeeId);
+  const nameTokens = normalizeText(selector.employeeName).split(' ').filter((token) => token.length >= 3);
 
   const pages = Array.from(new Set(items.map((item) => item.page))).sort((left, right) => left - right);
   for (const page of pages) {
     const pageItems = sortPdfItemsForReading(items.filter((item) => item.page === page));
 
     // In TYPE_B, the ID is often a plain number at the start of the row.
-    const idIndex = pageItems.findIndex((item) => normalizeEmployeeId(item.text) === targetId && item.x < 100);
+    const idIndex = pageItems.findIndex((item) => normalizeEmployeeId(item.text) === targetId && item.x < TYPE_B_MARKER_MAX_X);
 
     if (idIndex >= 0) {
       const marker = pageItems[idIndex];
@@ -292,8 +315,8 @@ function findEmployeeRowItemsTypeB(
       let nextMarkerY = -1000; // Bottom of page
       for (let i = idIndex + 1; i < pageItems.length; i += 1) {
         const item = pageItems[i];
-        // Next ID usually starts at x < 100 and is a number
-        if (item.x < 100 && /^\d{4,6}$/.test(normalizeEmployeeId(item.text))) {
+        // Next ID usually starts at x < TYPE_B_MARKER_MAX_X and is a number
+        if (item.x < TYPE_B_MARKER_MAX_X && /^\d{4,6}$/.test(normalizeEmployeeId(item.text))) {
           nextMarkerY = item.y + 2;
           break;
         }
@@ -306,7 +329,8 @@ function findEmployeeRowItemsTypeB(
       }
 
       const rowItems = pageItems.filter(
-        (item) => item.x > 150 && item.y <= marker.y + 12 && item.y >= nextMarkerY,
+        (item) => item.x > 150 && item.y <= marker.y + 12 && item.y >= nextMarkerY
+          && !matchesEmployeeNameTokens(item.text, nameTokens),
       );
 
       if (rowItems.length > 0) {
