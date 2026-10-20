@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node ../anclora-infrastructure/scripts/free-port.mjs && vite --port 3007 --strictPort",
     "proxy": "node proxy-server.mjs",
     "dev:full": "concurrently \"npm run proxy\" \"npm run dev\"",
     "build": "tsc && vite build",
