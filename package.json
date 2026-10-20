@@ -6,10 +6,10 @@
   "scripts": {
     "dev": "node -e \"const p='../anclora-infrastructure/scripts/free-port.mjs';if(require('fs').existsSync(p)){try{require('child_process').execFileSync(process.execPath,[p],{stdio:'inherit'})}catch(e){process.exit(e.status||1)}}\" && vite --port 3007 --strictPort",
     "proxy": "node proxy-server.mjs",
-    "dev:full": "concurrently \"npm run proxy\" \"npm run dev\"",
+    "dev:full": "node -e \"const p='../anclora-infrastructure/scripts/free-port.mjs';if(require('fs').existsSync(p)){try{require('child_process').execFileSync(process.execPath,[p,'--port','3007'],{stdio:'inherit'})}catch(e){process.exit(e.status||1)}}\" && concurrently \"npm run proxy\" \"npm run dev\"",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "node -e \"const p='../anclora-infrastructure/scripts/free-port.mjs';if(require('fs').existsSync(p)){try{require('child_process').execFileSync(process.execPath,[p,'--port','4173'],{stdio:'inherit'})}catch(e){process.exit(e.status||1)}}\" && vite preview"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
